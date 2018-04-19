@@ -1,0 +1,136 @@
+/*
+ * temp.cpp
+ *
+ *  Created on: Apr 17, 2018
+ *      Author: scanvandev
+ */
+
+
+
+#if (SAVE_IMAGES==1)
+			// Retrieve the settings of the first camera
+			int64_t gain(cameras[0].GainRaw.GetValue());
+			double exposureTime(cameras[0].ExposureTimeAbs.GetValue());
+			cameras[0].BalanceRatioSelector.SetValue(BalanceRatioSelector_Red);
+			double balanceR(cameras[0].BalanceRatioAbs.GetValue());
+			cameras[0].BalanceRatioSelector.SetValue(BalanceRatioSelector_Green);
+			double balanceG(cameras[0].BalanceRatioAbs.GetValue());
+			cameras[0].BalanceRatioSelector.SetValue(BalanceRatioSelector_Blue);
+			double balanceB(cameras[0].BalanceRatioAbs.GetValue());
+#endif
+
+
+
+
+
+
+
+				// When the cameras in the array are created the camera context value
+				// is set to the index of the camera in the array.
+				// The camera context is a user-settable value.
+				// This value is attached to each grab result and can be used
+				// to determine the camera that produced the grab result.
+				intptr_t cameraIndex = ptrGrabResult->GetCameraContext();
+
+				// Image grabbed successfully?
+				if (ptrGrabResult->GrabSucceeded()) {
+#ifdef PYLON_WIN_BUILD
+					// Show the image acquired by each camera in the window related to the camera.
+					// DisplayImage supports up to 32 image windows.
+					if (cameraIndex <= 31)
+					Pylon::DisplayImage(cameraIndex, ptrGrabResult);
+#endif
+
+					// Print the index and the model name of the camera.
+					cout << "Camera " << cameraIndex << ": "
+							<< cameras[cameraIndex].GetDeviceInfo().GetModelName()
+							<< " ("
+							<< cameras[cameraIndex].GetDeviceInfo().GetIpAddress()
+							<< ")" << endl;
+
+					// You could process the image here by accessing the image buffer.
+					cout << "GrabSucceeded: " << ptrGrabResult->GrabSucceeded()	<< endl;
+					const uint8_t *pImageBuffer = (uint8_t *) ptrGrabResult->GetBuffer();
+
+					cout << "Address of the buffer: " << (uint64_t)pImageBuffer << endl;
+					cout << "Gray value of first pixel: " << (uint32_t) pImageBuffer[0] << endl;
+					cout << "Image number: " << grabbedImages << endl << endl;
+
+
+#if (SAVE_IMAGES==1)||(SHOW_IMAGES==1)
+					// Display images in a window if SHOW_IMAGES is 1
+					// Convert the grabbed buffer to a pylon image.
+					formatConverter.Convert(pylonImage, ptrGrabResult);
+
+					// Create an OpenCV image from a pylon image.
+					openCvImage = cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(), CV_8UC3, (uint8_t *) pylonImage.GetBuffer());
+
+#endif
+
+#if (SHOW_IMAGES==1)
+					// Specify the name of the window to show
+					String windowTitle = "Camera " + to_string(cameraIndex);
+
+					// Create an OpenCV display window.
+					namedWindow(windowTitle, CV_WINDOW_NORMAL);// other options: // CV_AUTOSIZE, CV_FREERATIO
+
+					// Display the current image in the OpenCV display window.
+					imshow(windowTitle, openCvImage);
+					// Define a timeout for customer's input in ms.
+					// '0' means indefinite, i.e. the next image will be displayed after closing the window.
+					// '1' means live stream
+					waitKey(1);
+
+					// Plot the histogram
+					PlotHistogram(openCvImage);
+#endif
+
+#if (SAVE_IMAGES==1)
+
+
+					// Set SAVE_IMAGES to '1' to save images.
+					// Create the current image name for saving.
+					std::ostringstream s;
+					// Create image name files with ascending grabbed image numbers.
+					s << "./img/image_" << cameraIndex << "_" << grabbedImages << ".bmp";
+					std::string imageName(s.str());
+					// Save an OpenCV image.
+					//cv::cvtColor(openCvImage, openCvImage, COLOR_BGR2RGB);
+					imwrite(imageName, openCvImage);
+
+					// Save image using Pylon interface
+					std::ostringstream s3;
+					// Create image name files with ascending grabbed image numbers.
+					s3 << "./img/image_" << cameraIndex << "_" << grabbedImages << ".raw";
+					std::string imageNameTiff(s3.str());
+
+					CImagePersistence::Save( ImageFileFormat_Raw, String_t(imageNameTiff.c_str()), ptrGrabResult);
+
+					// Create the current file name for storing the settings.
+					std::ostringstream s2;
+					s2 << "./img/image_settings_" << cameraIndex << "_" << grabbedImages << ".txt";
+					std::string outputFileName(s2.str());
+
+					// Output file to store the gain, exposure time and white balance settings
+					fstream outFile;
+
+					outFile.open(outputFileName, ios::out);
+					if (outFile.is_open()) {
+						outFile << "Image file: " << s.str() << endl;
+						outFile << "Gain: " << gain << endl;
+						outFile << "Exposure time: " << exposureTime << " us" << endl;
+						outFile << "Balance R: " << balanceR << endl;
+						outFile << "Balance G: " << balanceG << endl;
+						outFile << "Balance B: " << balanceB << endl;
+
+						auto tnow = std::chrono::system_clock::now();
+						std::time_t this_time = std::chrono::system_clock::to_time_t(tnow);
+
+						outFile << "Time: " << std::ctime(&this_time) << endl;
+
+						outFile.close();
+					}
+					else {
+						cout << "Could not create file: " << outputFileName << endl;
+					}
+#endif
