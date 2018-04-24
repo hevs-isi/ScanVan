@@ -13,11 +13,6 @@
     It also uses a CActionTriggerConfiguration to set up the basic action command features.
 */
 
-// Define as 1 if images are to be saved.
-#define SAVE_IMAGES 1
-
-// Define as 1 if images are to be displayed in a window
-#define SHOW_IMAGES 1
 
 // Define as 1 to do an auto gain adjustment on the camera 0 in the beginning
 #define AUTO_GAIN_0 0
@@ -89,32 +84,18 @@ const int imageWidth = 3004;
 const int imageHeight = 3004;
 
 // Image buffers
-const unsigned long int imageBuffereSize12packed = imageWidth * imageHeight * 12 / 8; // Images are transferred in 12-bits packed
-/*
-CPylonImage pylonImageBuffer1;
-CPylonImage pylonImageBuffer2;
-*/
-uint8_t rawImageBuffer1[imageBuffereSize12packed];
-uint8_t rawImageBuffer2[imageBuffereSize12packed];
 const unsigned long int imageBufferSize = imageWidth * imageHeight; // Unpacked 8-bit per pixel
-uint8_t unpackedImageBuffer[imageBufferSize];
+uint8_t rawImageBuffer1[imageBufferSize];
 
 // Flags to control access to the buffers
-bool buffer1Writable = true;
-bool buffer2Writable = true;
-
-bool buffer1FinishedSaving = true;
-bool buffer2FinishedSaving = true;
-bool buffer1FinishedDisplaying = true;
-bool buffer2FinishedDisplaying = true;
-
 bool buffer1PylonReadable = false;
-bool buffer2PylonReadable = false;
 bool buffer1RawReadable = false;
-bool buffer2RawReadable = false;
 
 // Barrier to synchronize the threads
 pthread_barrier_t thBarrier;
+
+// Counts number of grab errors
+int numGrabError = 0;
 
 // Passing arguments to the thread
 struct thread_data {
@@ -139,22 +120,7 @@ void AutoGainOnce(CBaslerGigEInstantCameraArray& cameras, IGigETransportLayer *p
 void AutoAdjustOnce(CBaslerGigEInstantCameraArray& cameras, IGigETransportLayer *pTL, uint32_t DeviceKey, uint32_t GroupKey, String_t subnet);
 double PlotHistogram(const Mat &src);
 
-// Unpacks RG12 packed into RG8 unpacked
-void unpackImageBuffer (uint8_t *src, uint8_t *dst, size_t szDst){
-
-	size_t i=0;
-	size_t idx=0;
-
-	for (i=0; i<(szDst*12/8); i+=3) {
-		dst[idx]=src[i];
-		dst[idx+1]=src[i+2];
-		idx+=2;
-	}
-
-}
-
 void* thCapture (void *threadarg) {
-
 
 	struct thread_data *passedData;
 	passedData = (struct thread_data *) threadarg;
@@ -210,6 +176,8 @@ void* thCapture (void *threadarg) {
 				// to determine the camera that produced the grab result.
 				intptr_t cameraIndex = ptrGrabResult->GetCameraContext();
 
+				pthread_barrier_wait(&thBarrier);
+
 				// Image grabbed successfully?
 				if (ptrGrabResult->GrabSucceeded()) {
 
@@ -232,47 +200,50 @@ void* thCapture (void *threadarg) {
 					// Convert the grabbed buffer to a pylon image. Copy to pylonBuffer1
 					//formatConverter.Convert(pylonImageBuffer1, ptrGrabResult);
 
-					buffer1Writable = buffer1FinishedSaving && buffer1FinishedDisplaying;
-					buffer2Writable = buffer2FinishedSaving && buffer2FinishedDisplaying;
+//					buffer1Writable = buffer1FinishedSaving && buffer1FinishedDisplaying;
+//					buffer2Writable = buffer2FinishedSaving && buffer2FinishedDisplaying;
 
-					if (buffer1Writable) {
 
-						buffer1Writable = false;
+
+					//if (buffer1Writable) {
+
+						//buffer1Writable = false;
 						cout << "thread " << thread_id
 								<< ": Start writing image number "
 								<< numGrabbedImages << ". Writing buffer 1."
 								<< endl;
 
 						// Copy image to raw image buffer1
-						memcpy(rawImageBuffer1, pImageBuffer,
-								imageBuffereSize12packed);
+						memcpy(rawImageBuffer1, pImageBuffer, imageBufferSize);
 
 						buffer1PylonReadable = true;
 						buffer1RawReadable = true;
 						cout << "thread " << thread_id << ": Finished writing buffer 1." << endl;
-					} else if (buffer2Writable) {
-
-						buffer2Writable = false;
-						cout << "thread " << thread_id
-								<< ": Start writing image number "
-								<< numGrabbedImages << ". Writing buffer 2."
-								<< endl;
-
-						// Copy image to raw image buffer1
-						memcpy(rawImageBuffer2, pImageBuffer,
-								imageBuffereSize12packed);
-
-						buffer2PylonReadable = true;
-						buffer2RawReadable = true;
-
-						cout << "thread " << thread_id << ": Finished writing buffer 2." << endl;
-					}
+					//}
+//					} else if (buffer2Writable) {
+//
+//						buffer2Writable = false;
+//						cout << "thread " << thread_id
+//								<< ": Start writing image number "
+//								<< numGrabbedImages << ". Writing buffer 2."
+//								<< endl;
+//
+//						// Copy image to raw image buffer1
+//						memcpy(rawImageBuffer2, pImageBuffer, imageBufferSize);
+//
+//						buffer2PylonReadable = true;
+//						buffer2RawReadable = true;
+//
+//						cout << "thread " << thread_id << ": Finished writing buffer 2." << endl;
+//					}
 
 				} else {
 					// If a buffer has been incompletely grabbed, the network bandwidth is possibly insufficient for transferring
 					// multiple images simultaneously. See note above c_maxCamerasToUse.
 					cout << "Error: " << ptrGrabResult->GetErrorCode() << " "
 							<< ptrGrabResult->GetErrorDescription() << endl;
+					numGrabError++;
+					buffer1RawReadable = false;
 				}
 			}
 
@@ -289,14 +260,17 @@ void* thCapture (void *threadarg) {
 
 			cout << "thread " << thread_id << ": Finished grabbing." << endl;
 
-		} catch (...) {
-			cout
-					<< "##################################################################################"
-					<< endl;
+		}
+		catch (const GenericException &e)
+		    {
+		        // Error handling
+		        cerr << "An exception occurred." << endl
+		        << e.GetDescription() << endl;
+		    }
+		catch (...) {
+			cout << "##################################################################################" << endl;
 			cout << "Error capturing";
-			cout
-					<< "##################################################################################"
-					<< endl;
+			cout << "##################################################################################" << endl;
 		}
 
 
@@ -322,8 +296,8 @@ void* thSave (void *threadarg) {
 
 		if (buffer1RawReadable) {
 
-			buffer1RawReadable = false;
-			buffer1FinishedSaving = false;
+//			buffer1RawReadable = false;
+//			buffer1FinishedSaving = false;
 
 			cout << "thread " << thread_id << ": Start saving image number " << imageNum << ". Reading buffer 1." << endl;
 
@@ -336,44 +310,47 @@ void* thSave (void *threadarg) {
 
 			// Save the raw image into file
 			ofstream myFile (imageName, ios::out | ios::binary);
-			myFile.write ((char*)rawImageBuffer1,imageBuffereSize12packed);
+			myFile.write ((char*)rawImageBuffer1,imageBufferSize);
 			myFile.close();
 
 			cout << "thread " << thread_id << ": Finished saving from buffer 1." << endl;
 			imageNum++;
 
-			buffer1FinishedSaving = true;
+//			buffer1FinishedSaving = true;
 
-		} else if (buffer2RawReadable) {
-
-			buffer2RawReadable = false;
-			buffer2FinishedSaving = false;
-
-			cout << "thread " << thread_id << ": Start saving image number " << imageNum << ". Reading buffer 2." << endl;
-
-			// When the cameras in the array are created the camera context value
-			// is set to the index of the camera in the array.
-			// The camera context is a user-settable value.
-			// This value is attached to each grab result and can be used
-			// to determine the camera that produced the grab result.
-			int cameraIndex = 1;
-
-			std::ostringstream s1;
-			// Create image name files with ascending grabbed image numbers.
-			s1 << "./img/image_" << cameraIndex << "_" << imageNum << ".raw";
-			std::string imageName(s1.str());
-
-			// Save the raw image into file
-			ofstream myFile (imageName, ios::out | ios::binary);
-			myFile.write ((char*)rawImageBuffer2,imageBuffereSize12packed);
-			myFile.close();
-
-			cout << "thread " << thread_id << ": Finished saving from buffer 2." << endl;
-			imageNum++;
-
-			buffer2FinishedSaving = true;
 		}
 
+//		else if (buffer2RawReadable) {
+//
+//			buffer2RawReadable = false;
+//			buffer2FinishedSaving = false;
+//
+//			cout << "thread " << thread_id << ": Start saving image number " << imageNum << ". Reading buffer 2." << endl;
+//
+//			// When the cameras in the array are created the camera context value
+//			// is set to the index of the camera in the array.
+//			// The camera context is a user-settable value.
+//			// This value is attached to each grab result and can be used
+//			// to determine the camera that produced the grab result.
+//			int cameraIndex = 1;
+//
+//			std::ostringstream s1;
+//			// Create image name files with ascending grabbed image numbers.
+//			s1 << "./img/image_" << cameraIndex << "_" << imageNum << ".raw";
+//			std::string imageName(s1.str());
+//
+//			// Save the raw image into file
+//			ofstream myFile (imageName, ios::out | ios::binary);
+//			myFile.write ((char*)rawImageBuffer2,imageBufferSize);
+//			myFile.close();
+//
+//			cout << "thread " << thread_id << ": Finished saving from buffer 2." << endl;
+//			imageNum++;
+//
+//			buffer2FinishedSaving = true;
+//		}
+
+		pthread_barrier_wait(&thBarrier);
 		pthread_barrier_wait(&thBarrier);
 	}
 
@@ -485,11 +462,12 @@ int main(int argc, char* argv[])
 
 		for (size_t i = 0; i < cameras.GetSize(); ++i) {
 			// This sets the transfer pixel format to BayerRG8
-			cameras[i].PixelFormat.SetValue(PixelFormat_BayerRG12Packed);
+			cameras[i].PixelFormat.SetValue(PixelFormat_BayerRG8);
 
 			// This sets the value of the packet size on the camera to 9000
 			// On the host size, change the MTU to 9014 and the maximum UDP receive buffer size to 2097152
 			cameras[i].GevSCPSPacketSize.SetValue(9000);
+			cameras[i].GevSCPD.SetValue(2500);
 
 			cameras[i].ExposureTimeAbs.SetValue(cameras[i].ExposureTimeAbs.GetMin());
 			cameras[i].GainRaw.SetValue(cameras[i].GainRaw.GetMin());
@@ -572,20 +550,18 @@ int main(int argc, char* argv[])
 		while (!terminateLoop) {
 			if (buffer1PylonReadable) {
 
-				buffer1PylonReadable = false;
-				buffer1FinishedDisplaying = false;
+//				buffer1PylonReadable = false;
+//				buffer1FinishedDisplaying = false;
 
 				cout << "thread " << thread_id << ": Start displaying image number " << imageNum << ". Reading buffer 1." << endl;
 
 				//intptr_t cameraIndex = ptrGrabResult1->GetCameraContext();
 				const int cameraIndex = 1;
 
-				unpackImageBuffer (rawImageBuffer1, unpackedImageBuffer, imageBufferSize);
-
-				buffer1FinishedDisplaying = true;
+//				buffer1FinishedDisplaying = true;
 				cout << "thread " << thread_id << ": Finished copying buffer for displaying buffer 1." << endl;
 
-				openCvImageRG8 = cv::Mat(imageHeight, imageWidth, CV_8UC1, unpackedImageBuffer);
+				openCvImageRG8 = cv::Mat(imageHeight, imageWidth, CV_8UC1, rawImageBuffer1);
 
 				cvtColor(openCvImageRG8, openCvImage, COLOR_BayerRG2RGB);
 
@@ -612,52 +588,50 @@ int main(int argc, char* argv[])
 				imageNum++;
 
 
-			} else if (buffer2PylonReadable) {
-
-				buffer2PylonReadable = false;
-				buffer2FinishedDisplaying = false;
-
-				cout << "thread " << thread_id << ": Start saving image number " << imageNum << ". Reading buffer 2." << endl;
-
-				//intptr_t cameraIndex = ptrGrabResult2->GetCameraContext();
-				const int cameraIndex = 1;
-
-				unpackImageBuffer(rawImageBuffer2, unpackedImageBuffer,	imageBufferSize);
-
-				buffer2FinishedDisplaying = true;
-				cout << "thread " << thread_id << ": Finished copying buffer for displaying buffer 2." << endl;
-
-				openCvImageRG8 = cv::Mat(imageHeight, imageWidth, CV_8UC1, unpackedImageBuffer);
-
-				cvtColor(openCvImageRG8, openCvImage, COLOR_BayerRG2RGB);
-
-				// Create an OpenCV image from a pylon image.
-				//openCvImage = cv::Mat(3004, 3004, CV_8UC3,	(uint8_t *) pylonImageBuffer2.GetBuffer());
-
-				// Specify the name of the window to show
-				String windowTitle = "Camera " + to_string(cameraIndex);
-
-				// Create an OpenCV display window.
-				namedWindow(windowTitle, CV_WINDOW_NORMAL);	// other options: // CV_AUTOSIZE, CV_FREERATIO
-
-				// Display the current image in the OpenCV display window.
-				imshow(windowTitle, openCvImage);
-
-				// Define a timeout for customer's input in ms.
-				// '0' means indefinite, i.e. the next image will be displayed after closing the window.
-				// '1' means live stream
-				key = waitKey(1);
-
-				if (key == 113 )
-					terminateLoop = true;
-
-				cout << "thread " << thread_id << ": Finished displaying buffer 2." << endl;
-				imageNum++;
-
-
-
 			}
+//			else if (buffer2PylonReadable) {
+//
+//				buffer2PylonReadable = false;
+//				buffer2FinishedDisplaying = false;
+//
+//				cout << "thread " << thread_id << ": Start saving image number " << imageNum << ". Reading buffer 2." << endl;
+//
+//				//intptr_t cameraIndex = ptrGrabResult2->GetCameraContext();
+//				const int cameraIndex = 1;
+//
+//				buffer2FinishedDisplaying = true;
+//				cout << "thread " << thread_id << ": Finished copying buffer for displaying buffer 2." << endl;
+//
+//				openCvImageRG8 = cv::Mat(imageHeight, imageWidth, CV_8UC1, rawImageBuffer2);
+//
+//				cvtColor(openCvImageRG8, openCvImage, COLOR_BayerRG2RGB);
+//
+//				// Create an OpenCV image from a pylon image.
+//				//openCvImage = cv::Mat(3004, 3004, CV_8UC3,	(uint8_t *) pylonImageBuffer2.GetBuffer());
+//
+//				// Specify the name of the window to show
+//				String windowTitle = "Camera " + to_string(cameraIndex);
+//
+//				// Create an OpenCV display window.
+//				namedWindow(windowTitle, CV_WINDOW_NORMAL);	// other options: // CV_AUTOSIZE, CV_FREERATIO
+//
+//				// Display the current image in the OpenCV display window.
+//				imshow(windowTitle, openCvImage);
+//
+//				// Define a timeout for customer's input in ms.
+//				// '0' means indefinite, i.e. the next image will be displayed after closing the window.
+//				// '1' means live stream
+//				key = waitKey(1);
+//
+//				if (key == 113 )
+//					terminateLoop = true;
+//
+//				cout << "thread " << thread_id << ": Finished displaying buffer 2." << endl;
+//				imageNum++;
+//
+//			}
 
+			pthread_barrier_wait(&thBarrier);
 			pthread_barrier_wait(&thBarrier);
 		}
 
@@ -679,7 +653,7 @@ int main(int argc, char* argv[])
 		auto duration = duration_cast<microseconds>(t2 - t1).count();
 		cout << "time for grabbing: " << duration << " microseconds" << endl << flush;
 		cout << "fps: " << double(1000000) / duration * numGrabbedImages << endl;
-
+		cout << "Number of grabbing errors: " << numGrabError << endl;
 
 		for (size_t i = 0; i < cameras.GetSize(); ++i) {
 			cameras[i].GainAuto.SetValue(GainAuto_Off);
