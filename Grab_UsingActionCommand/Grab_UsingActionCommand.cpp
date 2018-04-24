@@ -305,7 +305,7 @@ void* thSave (void *threadarg) {
 
 			std::ostringstream s1;
 			// Create image name files with ascending grabbed image numbers.
-			s1 << "./img/image_" << cameraIndex << "_" << imageNum	<< ".raw";
+			s1 << "/media/scanvan/Windows/Users/marcelo.kaihara.HEVS/Documents/img/image_" << cameraIndex << "_" << imageNum	<< ".raw";
 			std::string imageName(s1.str());
 
 			// Save the raw image into file
