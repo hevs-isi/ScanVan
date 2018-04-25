@@ -353,6 +353,28 @@ int main(int argc, char* argv[])
 
 		cameras.StopGrabbing();
 
+		// Save camera configuration to file
+		string configFileName = "cameraparam.cfg";
+		ofstream myFile;
+		myFile.open (configFileName);;
+		if (myFile.is_open()) {
+			if (cameras.GetSize() == 2) {
+				myFile << "Num Cameras: 2" << "\n";
+			} else {
+				myFile << "Num Cameras: 1" << "\n";
+			}
+			myFile << "Camera 0 - Exposure time: " << cameras[0].ExposureTimeAbs.GetValue() << "\n";
+			myFile << "Camera 0 - Gain: " << cameras[0].GainRaw.GetValue() << "\n";
+			if (cameras.GetSize() == 2) {
+				myFile << "Camera 1 - Exposure time: " << cameras[1].ExposureTimeAbs.GetValue() << "\n";
+				myFile << "Camera 1 - Gain: " << cameras[1].GainRaw.GetValue() << "\n";
+			}
+			myFile.close();
+			cout << "Saved camera configuration to file \"" << configFileName << "\"" << endl;
+		} else {
+			cout << "Error: Unable to open the file \"" << configFileName << "\"" << endl;
+		}
+
 		destroyAllWindows();
 
 		for (size_t i = 0; i < cameras.GetSize(); ++i) {
