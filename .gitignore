@@ -34,3 +34,9 @@
 *backup*
 *.bkp
 ./Grab_UsingActionCommand
+*.cproject
+*.project
+Debug
+language.settings.xml
+.metadata
+*.prefs

@@ -3,7 +3,7 @@
 // Author      : Marcelo Kaihara
 // Version     :
 // Copyright   : 
-// Description : Hello World in C++, Ansi-style
+// Description : Converts raw file into bmp
 //============================================================================
 
 #include <iostream>
@@ -21,7 +21,7 @@ using namespace cv;
 int main(int argc, char* argv[]) {
 
 	if (argc < 2) {
-		cerr << "Usage: " << argv[0] << " PATH_TO_RAW_IMAGE_FILE" << endl;
+		cerr << "Usage: " << argv[0] << " PATH_TO_RAW_IMAGE_FILE";
 		return 1;
 	}
 

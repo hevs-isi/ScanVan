@@ -363,7 +363,7 @@ int main(int argc, char* argv[])
     int exitCode = 0;
 
 
-    // Before using any pylon methods, the pylon runtime must be initialized. 
+    // Before using any pylon methods, the pylon runtime must be initialized.
     PylonInitialize();
 
 	// Declare an integer variable to count the number of grabbed images
@@ -466,7 +466,7 @@ int main(int argc, char* argv[])
 
 			// This sets the value of the packet size on the camera to 9000
 			// On the host size, change the MTU to 9014 and the maximum UDP receive buffer size to 2097152
-			cameras[i].GevSCPSPacketSize.SetValue(9000);
+			cameras[i].GevSCPSPacketSize.SetValue(8000);
 			cameras[i].GevSCPD.SetValue(2500);
 
 			cameras[i].ExposureTimeAbs.SetValue(cameras[i].ExposureTimeAbs.GetMin());

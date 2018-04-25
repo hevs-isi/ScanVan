@@ -21,7 +21,7 @@ using namespace cv;
 int main(int argc, char* argv[]) {
 
 	if (argc < 2) {
-		cerr << "Usage: " << argv[0] << " PATH_TO_RAW_IMAGE_FILE" << endl;
+		cerr << "Usage: " << argv[0] << " PATH_TO_RAW_IMAGE_FILE";
 		return 1;
 	}
 
