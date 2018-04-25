@@ -581,7 +581,7 @@ int main(int argc, char* argv[])
 				// '1' means live stream
 				key=waitKey(1);
 
-				if (key == 113 )
+				if (key == 113) // if 'q' key is pressed
 					terminateLoop = true;
 
 				cout << "thread " << thread_id << ": Finished displaying buffer 1." << endl;
