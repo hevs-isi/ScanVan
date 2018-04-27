@@ -8,12 +8,6 @@
    The third one displays the image.
 */
 
-// Define as 1 to do an auto gain adjustment on the camera 0 continuously
-#define AUTO_GAIN_CONTINUOUS_0 0
-
-// Define as 1 to do an auto exposure time adjustment on the camera 0 continuously
-#define AUTO_EXPOSURE_TIME_CONTINUOUS_0 0
-
 // Include files to use OpenCV API
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
@@ -70,6 +64,8 @@ static const uint32_t c_maxCamerasToUse = 2;
 // Parameters for the image
 const int imageWidth = 3004;
 const int imageHeight = 3004;
+const int offsetX = 502;
+const int offsetY = 2;
 
 // Image buffers
 const unsigned long int imageBufferSize = imageWidth * imageHeight; // Unpacked 8-bit per pixel
@@ -82,9 +78,6 @@ bool buffer1RawReadable = false;
 // Barrier to synchronize the threads
 pthread_barrier_t thBarrier;
 
-// Counts number of grab errors
-int numGrabError = 0;
-
 // Passing arguments to the thread
 struct thread_data {
 	int thread_id;
@@ -96,15 +89,38 @@ struct thread_data {
 	DeviceInfoList_t *usableDeviceInfos;
 };
 
+struct image_data {
+	size_t cameraIdx; 		// camera index
+	time_t captureTime;		// capture time
+	double exposureTime;	// exposure time
+	int64_t gain;			// gain
+	double balanceR; 		// white balance R
+	double balanceG; 		// white balance G
+	double balanceB;		// white balance B
+	int autoExpTime;		// Auto Exposure Time
+	int autoGain;
+};
+
+image_data imageData[2] = {{0, 0, 0, 0, 0, 0, 0, 0, 0},  // Struct where information of the images are stored
+						   {0, 0, 0, 0, 0, 0, 0, 0, 0}};
+
 // Boolean to exit loops in thread
 bool terminateLoop = false;
-
 // Counts the number images grabbed
 int numGrabbedImages = 0;
+// Counts number of grab errors
+int numGrabError = 0;
+
+// Auto exposure time continuous on-off
+bool autoExpTimeCont = false;
+// Auto gain continuous on-off
+bool autoGainCont = false;
+// Folder where images will be stored
+string imageFolder = "./img";
 
 // Prototypes
 double PlotHistogram(const Mat &src);
-int readConfiFile (double &expTime0, int &gain0, double &expTime1, int &gain1);
+int readConfigFile (double &expTime0, int &gain0, double &expTime1, int &gain1);
 void* thSave (void *threadarg);
 void* thCapture (void *threadarg);
 
@@ -134,7 +150,7 @@ int main(int argc, char* argv[])
 	double expTime[2] { 0, 0};
 	int gain[2] {0, 0};
 
-	if (readConfiFile (expTime[0], gain[0], expTime[1], gain[1])) {
+	if (readConfigFile (expTime[0], gain[0], expTime[1], gain[1])) {
 		return 1; // Error reading the configuration file
 	}
 
@@ -223,23 +239,28 @@ int main(int argc, char* argv[])
 			// This sets the value of the packet size on the camera to 9000
 			// On the host size, change the MTU to 9014 and the maximum UDP receive buffer size to 2097152
 			cameras[i].GevSCPSPacketSize.SetValue(8000);
-			cameras[i].GevSCPD.SetValue(2500);
+			cameras[i].GevSCPD.SetValue(0);
+			cameras[i].MaxNumBuffer.SetValue(20);
 
 			cameras[i].ExposureTimeAbs.SetValue(expTime[i]);
 			cameras[i].GainRaw.SetValue(gain[i]);
 
 			cameras[i].Width.SetValue(imageWidth);
 			cameras[i].Height.SetValue(imageHeight);
+			if (IsWritable(cameras[i].OffsetX)) {
+				cameras[i].OffsetX.SetValue(offsetX);
+			}
+			if (IsWritable(cameras[i].OffsetY)) {
+				cameras[i].OffsetY.SetValue(offsetY);
+			}
 
 		}
 
-#if AUTO_GAIN_CONTINUOUS_0==1
-		cameras[0].GainAuto.SetValue(GainAuto_Continuous);
-#endif
-
-#if AUTO_EXPOSURE_TIME_CONTINUOUS_0==1
-		cameras[0].ExposureAuto.SetValue(ExposureAuto_Continuous);
-#endif
+		// Sets auto adjustments continuous
+		if (autoExpTimeCont)
+			cameras[0].ExposureAuto.SetValue(ExposureAuto_Continuous);
+		if (autoGainCont)
+			cameras[0].GainAuto.SetValue(GainAuto_Continuous);
 
 		// For measuring the grabbing time
 		high_resolution_clock::time_point t1;
@@ -287,22 +308,14 @@ int main(int argc, char* argv[])
 		while (!terminateLoop) {
 			if (buffer1PylonReadable) {
 
-//				buffer1PylonReadable = false;
-//				buffer1FinishedDisplaying = false;
-
-				cout << "thread " << thread_id << ": Start displaying image number " << imageNum << ". Reading buffer 1." << endl;
+				cout << "thread " << thread_id << ": Start displaying image number " << imageNum << endl;
 
 				//intptr_t cameraIndex = ptrGrabResult1->GetCameraContext();
-				const int cameraIndex = 1;
-
-//				buffer1FinishedDisplaying = true;
-				cout << "thread " << thread_id << ": Finished copying buffer for displaying buffer 1." << endl;
+				const int cameraIndex = 0;
 
 				openCvImageRG8 = cv::Mat(imageHeight, imageWidth, CV_8UC1, rawImageBuffer1);
 
 				cvtColor(openCvImageRG8, openCvImage, COLOR_BayerRG2RGB);
-
-				//openCvImage = cv::Mat(3004, 3004, CV_8UC3, (uint8_t *) pylonImageBuffer1.GetBuffer());
 
 				// Specify the name of the window to show
 				String windowTitle = "Camera " + to_string(cameraIndex);
@@ -321,52 +334,11 @@ int main(int argc, char* argv[])
 				if (key == 113) // if 'q' key is pressed
 					terminateLoop = true;
 
-				cout << "thread " << thread_id << ": Finished displaying buffer 1." << endl;
+				cout << "thread " << thread_id << ": Finished displaying buffer." << endl;
 				imageNum++;
 
 
 			}
-//			else if (buffer2PylonReadable) {
-//
-//				buffer2PylonReadable = false;
-//				buffer2FinishedDisplaying = false;
-//
-//				cout << "thread " << thread_id << ": Start saving image number " << imageNum << ". Reading buffer 2." << endl;
-//
-//				//intptr_t cameraIndex = ptrGrabResult2->GetCameraContext();
-//				const int cameraIndex = 1;
-//
-//				buffer2FinishedDisplaying = true;
-//				cout << "thread " << thread_id << ": Finished copying buffer for displaying buffer 2." << endl;
-//
-//				openCvImageRG8 = cv::Mat(imageHeight, imageWidth, CV_8UC1, rawImageBuffer2);
-//
-//				cvtColor(openCvImageRG8, openCvImage, COLOR_BayerRG2RGB);
-//
-//				// Create an OpenCV image from a pylon image.
-//				//openCvImage = cv::Mat(3004, 3004, CV_8UC3,	(uint8_t *) pylonImageBuffer2.GetBuffer());
-//
-//				// Specify the name of the window to show
-//				String windowTitle = "Camera " + to_string(cameraIndex);
-//
-//				// Create an OpenCV display window.
-//				namedWindow(windowTitle, CV_WINDOW_NORMAL);	// other options: // CV_AUTOSIZE, CV_FREERATIO
-//
-//				// Display the current image in the OpenCV display window.
-//				imshow(windowTitle, openCvImage);
-//
-//				// Define a timeout for customer's input in ms.
-//				// '0' means indefinite, i.e. the next image will be displayed after closing the window.
-//				// '1' means live stream
-//				key = waitKey(1);
-//
-//				if (key == 113 )
-//					terminateLoop = true;
-//
-//				cout << "thread " << thread_id << ": Finished displaying buffer 2." << endl;
-//				imageNum++;
-//
-//			}
 
 			pthread_barrier_wait(&thBarrier);
 			pthread_barrier_wait(&thBarrier);
@@ -423,14 +395,15 @@ int main(int argc, char* argv[])
     return exitCode;
 }
 
-int readConfiFile (double &expTime0, int &gain0, double &expTime1, int &gain1) {
+int readConfigFile (double &expTime0, int &gain0, double &expTime1, int &gain1) {
 
 	expTime0 = 0;
 	expTime1 = 0;
 	gain0 = 0;
 	gain1 = 0;
 
-	// Load camera configuration file
+	// Reads the camera configuration parameters
+	// The exposure time and the gain for camera 0 and camera 1
 	ifstream myConfigFile;
 	string configFileName = "cameraparam.cfg";
 	string str(""), str1(""), str2(""), str3(""), str4("");
@@ -466,9 +439,157 @@ int readConfiFile (double &expTime0, int &gain0, double &expTime1, int &gain1) {
 		gain1 = stoi(token);
 	}
 
+	// Reads the configuration parameteres
+	configFileName = "genparam.cfg";
+
+	myConfigFile.open (configFileName);
+	if (myConfigFile.is_open()){
+		getline (myConfigFile, str1);	// Reads the main img folder
+		getline (myConfigFile, str2);	// Auto exposure time continuous
+		getline (myConfigFile, str3);	// Auto gain continuous
+		myConfigFile.close();
+	} else {
+		cout << "Error: Unable to open the file \"" << configFileName << "\"";
+		return 1;
+	}
+
+	imageFolder = str1.substr(str1.find(":") + 1,str1.length());
+	token = str2.substr(str2.find(":") + 1,str2.length());
+	autoExpTimeCont = (bool)stoi(token);
+	token = str3.substr(str3.find(":") + 1,str3.length());
+	autoGainCont = (bool)stoi(token);
+
 	return 0;
 }
 
+void* thCapture (void *threadarg) {
+
+	struct thread_data *passedData;
+	passedData = (struct thread_data *) threadarg;
+
+	int thread_id = passedData->thread_id;
+
+	const int DefaultTimeout_ms = 10000;
+
+	CImageFormatConverter formatConverter;
+	// Specify the output pixel format.
+	formatConverter.OutputPixelFormat = PixelType_BGR8packed;
+
+	passedData->cameras->StartGrabbing();
+
+	((*(passedData->cameras))[0].WaitForFrameTriggerReady(10000, TimeoutHandling_ThrowException));
+	passedData->pTL->IssueActionCommand(passedData->DeviceKey, passedData->GroupKey, AllGroupMask, passedData->subnet);
+
+	while (!terminateLoop) {
+
+//				cout << endl << "Issuing an action command." << endl;
+
+//		cout << "thread " << thread_id << ": Start getting parameters from camera " <<  endl;
+//		for (size_t i = 0; i < (*(passedData->cameras)).GetSize(); ++i) {
+//			imageData[i].exposureTime = (*(passedData->cameras))[i].ExposureTimeAbs.GetValue();
+//			imageData[i].gain = (*(passedData->cameras))[i].GainRaw.GetValue();
+//			(*(passedData->cameras))[i].BalanceRatioSelector.SetValue(BalanceRatioSelector_Red);
+//			imageData[i].balanceR = (*(passedData->cameras))[i].BalanceRatioAbs.GetValue();
+//			(*(passedData->cameras))[i].BalanceRatioSelector.SetValue(BalanceRatioSelector_Green);
+//			imageData[i].balanceG = (*(passedData->cameras))[i].BalanceRatioAbs.GetValue();
+//			(*(passedData->cameras))[i].BalanceRatioSelector.SetValue(BalanceRatioSelector_Blue);
+//			imageData[i].balanceB = (*(passedData->cameras))[i].BalanceRatioAbs.GetValue();
+//			imageData[i].autoExpTime = (int) autoExpTimeCont;
+//			imageData[i].autoGain = (int) autoGainCont;
+//
+//		}
+
+
+		// This smart pointer will receive the grab result data.
+		CBaslerGigEGrabResultPtr ptrGrabResult;
+
+		// Retrieve images from all cameras.
+		for (size_t i = 0; i < passedData->usableDeviceInfos->size() && passedData->cameras->IsGrabbing(); ++i) {
+
+			try {
+
+				cout << "thread " << thread_id << ": Retrieve result" << endl;
+				// CInstantCameraArray::RetrieveResult will return grab results in the order they arrive.
+				passedData->cameras->RetrieveResult(DefaultTimeout_ms, ptrGrabResult, TimeoutHandling_ThrowException);
+				cout << "thread " << thread_id << ": End retrieve result" << endl;
+
+			} catch (const GenericException &e) {
+				// Error handling
+				cout << "ERROR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+				cerr << "An exception occurred." << endl << e.GetDescription() << endl;
+			}
+
+			// When the cameras in the array are created the camera context value
+			// is set to the index of the camera in the array.
+			// The camera context is a user-settable value.
+			// This value is attached to each grab result and can be used
+			// to determine the camera that produced the grab result.
+			cout << "thread " << thread_id << ": Get camera index" << endl;
+			intptr_t cameraIndex = ptrGrabResult->GetCameraContext();
+			cout << "thread " << thread_id << ": Got camera index" << endl;
+
+			auto tnow = std::chrono::system_clock::now();
+			imageData[cameraIndex].captureTime = std::chrono::system_clock::to_time_t(tnow);
+
+			pthread_barrier_wait(&thBarrier);
+
+			// Image grabbed successfully?
+			if (ptrGrabResult->GrabSucceeded()) {
+
+				const uint8_t *pImageBuffer = (uint8_t *) ptrGrabResult->GetBuffer();
+
+				cout << "thread " << thread_id << ": Start writing image number " << numGrabbedImages << endl;
+
+				// Copy image to raw image buffer1
+				memcpy(rawImageBuffer1, pImageBuffer, imageBufferSize);
+
+				buffer1PylonReadable = true;
+				buffer1RawReadable = true;
+				cout << "thread " << thread_id << ": Finished writing buffer." << endl;
+
+				numGrabbedImages++;
+
+				pthread_barrier_wait(&thBarrier);
+
+			} else {
+				// If a buffer has been incompletely grabbed, the network bandwidth is possibly insufficient for transferring
+				// multiple images simultaneously. See note above c_maxCamerasToUse.
+				cout << "Error: " << ptrGrabResult->GetErrorCode() << " "
+						<< ptrGrabResult->GetErrorDescription() << endl;
+				numGrabError++;
+				buffer1RawReadable = false;
+			}
+
+		}
+
+		((*(passedData->cameras))[0].WaitForFrameTriggerReady(10000, TimeoutHandling_ThrowException));
+		passedData->pTL->IssueActionCommand(passedData->DeviceKey, passedData->GroupKey, AllGroupMask, passedData->subnet);
+
+		// In case you want to trigger again you should wait for the camera
+		// to become trigger-ready before issuing the next action command.
+		// To avoid overtriggering you should call cameras[0].WaitForFrameTriggerReady
+		// (see Grab_UsingGrabLoopThread sample for details).
+//		try {
+//			cout << "thread " << thread_id << ": Start waiting trigger ready" <<  endl;
+//			for (size_t i = 0; i < passedData->cameras->GetSize(); ++i) {
+//				(*(passedData->cameras))[0].WaitForFrameTriggerReady(10000,	TimeoutHandling_ThrowException);
+//			}
+//			cout << "thread " << thread_id << ": Finish waiting trigger ready" <<  endl;
+//		} catch (const GenericException &e) {
+//			// Error handling
+//			cout << "ERROR===============================================" << endl;
+//			cerr << "An exception occurred." << endl << e.GetDescription() << endl;
+//		}
+
+	}
+
+	passedData->cameras->StopGrabbing();
+
+	pthread_exit(NULL);
+}
+
+
+/*
 void* thCapture (void *threadarg) {
 
 	struct thread_data *passedData;
@@ -480,55 +601,80 @@ void* thCapture (void *threadarg) {
 	// The cameras won't transmit any image data, because they are configured to wait for an action command.
 	passedData->cameras->StartGrabbing();
 
-	const int DefaultTimeout_ms = 5000;
+	const int DefaultTimeout_ms = 10000;
 
 	CImageFormatConverter formatConverter;
 	// Specify the output pixel format.
 	formatConverter.OutputPixelFormat = PixelType_BGR8packed;
 
-	while ((!terminateLoop)&&(passedData->cameras->IsGrabbing())) {
+	while ((!terminateLoop) && (passedData->cameras->IsGrabbing())) {
 
-		try {
+		cout << "thread " << thread_id << ": Start grabbing image number " << numGrabbedImages << endl;
 
-			cout << "thread " << thread_id << ": Start grabbing image number "
-					<< numGrabbedImages << endl;
-
-			//////////////////////////////////////////////////////////////////////
-			//////////////////////////////////////////////////////////////////////
-			// Use an Action Command to Trigger Multiple Cameras at the Same Time.
-			//////////////////////////////////////////////////////////////////////
-			//////////////////////////////////////////////////////////////////////
+		//////////////////////////////////////////////////////////////////////
+		//////////////////////////////////////////////////////////////////////
+		// Use an Action Command to Trigger Multiple Cameras at the Same Time.
+		//////////////////////////////////////////////////////////////////////
+		//////////////////////////////////////////////////////////////////////
 
 //				cout << endl << "Issuing an action command." << endl;
 
-			// Now we issue the action command to all devices in the subnet.
-			// The devices with a matching DeviceKey, GroupKey and valid GroupMask will grab an image.
-			passedData->pTL->IssueActionCommand(passedData->DeviceKey,
-					passedData->GroupKey, AllGroupMask, passedData->subnet);
+//		cout << "thread " << thread_id << ": Start getting parameters from camera " <<  endl;
+//		for (size_t i = 0; i < (*(passedData->cameras)).GetSize(); ++i) {
+//			imageData[i].exposureTime = (*(passedData->cameras))[i].ExposureTimeAbs.GetValue();
+//			imageData[i].gain = (*(passedData->cameras))[i].GainRaw.GetValue();
+//			(*(passedData->cameras))[i].BalanceRatioSelector.SetValue(BalanceRatioSelector_Red);
+//			imageData[i].balanceR = (*(passedData->cameras))[i].BalanceRatioAbs.GetValue();
+//			(*(passedData->cameras))[i].BalanceRatioSelector.SetValue(BalanceRatioSelector_Green);
+//			imageData[i].balanceG = (*(passedData->cameras))[i].BalanceRatioAbs.GetValue();
+//			(*(passedData->cameras))[i].BalanceRatioSelector.SetValue(BalanceRatioSelector_Blue);
+//			imageData[i].balanceB = (*(passedData->cameras))[i].BalanceRatioAbs.GetValue();
+//			imageData[i].autoExpTime = (int) autoExpTimeCont;
+//			imageData[i].autoGain = (int) autoGainCont;
+//
+//		}
 
-			// This smart pointer will receive the grab result data.
-			CBaslerGigEGrabResultPtr ptrGrabResult;
+		// Now we issue the action command to all devices in the subnet.
+		// The devices with a matching DeviceKey, GroupKey and valid GroupMask will grab an image.
+		cout << "thread " << thread_id << ": Issue and action command" <<  endl;
+		if ((*(passedData->cameras))[0].WaitForFrameTriggerReady(10000,	TimeoutHandling_ThrowException))
+			passedData->pTL->IssueActionCommand(passedData->DeviceKey, passedData->GroupKey, AllGroupMask, passedData->subnet);
+		else
+			cout << "Camera is not trigger ready" << endl;
 
-			// Retrieve images from all cameras.
-			for (size_t i = 0;
-					i < passedData->usableDeviceInfos->size()
-							&& passedData->cameras->IsGrabbing(); ++i) {
+		// This smart pointer will receive the grab result data.
+		CBaslerGigEGrabResultPtr ptrGrabResult;
 
+		// Retrieve images from all cameras.
+		for (size_t i = 0; i < passedData->usableDeviceInfos->size() && passedData->cameras->IsGrabbing(); ++i) {
+
+			try {
+				cout << "thread " << thread_id << ": Retrieve result" <<  endl;
 				// CInstantCameraArray::RetrieveResult will return grab results in the order they arrive.
-				passedData->cameras->RetrieveResult(DefaultTimeout_ms,
-						ptrGrabResult, TimeoutHandling_ThrowException);
+				passedData->cameras->RetrieveResult(DefaultTimeout_ms, ptrGrabResult, TimeoutHandling_ThrowException);
+				cout << "thread " << thread_id << ": End retrieve result" <<  endl;
+			} catch (const GenericException &e) {
+				// Error handling
+				cout << "ERROR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+				cerr << "An exception occurred." << endl << e.GetDescription() << endl;
+			}
 
-				// When the cameras in the array are created the camera context value
-				// is set to the index of the camera in the array.
-				// The camera context is a user-settable value.
-				// This value is attached to each grab result and can be used
-				// to determine the camera that produced the grab result.
-				intptr_t cameraIndex = ptrGrabResult->GetCameraContext();
+			// When the cameras in the array are created the camera context value
+			// is set to the index of the camera in the array.
+			// The camera context is a user-settable value.
+			// This value is attached to each grab result and can be used
+			// to determine the camera that produced the grab result.
+			cout << "thread " << thread_id << ": Get camera index" <<  endl;
+			intptr_t cameraIndex = ptrGrabResult->GetCameraContext();
+			cout << "thread " << thread_id << ": Got camera index" <<  endl;
 
-				pthread_barrier_wait(&thBarrier);
+			auto tnow = std::chrono::system_clock::now();
+			imageData[cameraIndex].captureTime = std::chrono::system_clock::to_time_t(tnow);
 
-				// Image grabbed successfully?
-				if (ptrGrabResult->GrabSucceeded()) {
+			pthread_barrier_wait(&thBarrier);
+
+			// Image grabbed successfully?
+			if (ptrGrabResult->GrabSucceeded()) {
 
 //						// Print the index and the model name of the camera.
 //						cout << "Camera " << cameraIndex << ": "
@@ -540,88 +686,49 @@ void* thCapture (void *threadarg) {
 //						// You could process the image here by accessing the image buffer.
 //						cout << "GrabSucceeded: " << ptrGrabResult->GrabSucceeded() << endl;
 
-					const uint8_t *pImageBuffer =
-							(uint8_t *) ptrGrabResult->GetBuffer();
+				const uint8_t *pImageBuffer =
+						(uint8_t *) ptrGrabResult->GetBuffer();
 //
 //						cout << "Gray value of first pixel: " << (uint32_t) pImageBuffer[0] << endl;
 //						cout << "Image number: " << numGrabbedImages << endl << endl;
 
-					// Convert the grabbed buffer to a pylon image. Copy to pylonBuffer1
-					//formatConverter.Convert(pylonImageBuffer1, ptrGrabResult);
+				cout << "thread " << thread_id << ": Start writing image number " << numGrabbedImages << endl;
 
-//					buffer1Writable = buffer1FinishedSaving && buffer1FinishedDisplaying;
-//					buffer2Writable = buffer2FinishedSaving && buffer2FinishedDisplaying;
+				// Copy image to raw image buffer1
+				memcpy(rawImageBuffer1, pImageBuffer, imageBufferSize);
 
+				buffer1PylonReadable = true;
+				buffer1RawReadable = true;
+				cout << "thread " << thread_id << ": Finished writing buffer." << endl;
 
-
-					//if (buffer1Writable) {
-
-						//buffer1Writable = false;
-						cout << "thread " << thread_id
-								<< ": Start writing image number "
-								<< numGrabbedImages << ". Writing buffer 1."
-								<< endl;
-
-						// Copy image to raw image buffer1
-						memcpy(rawImageBuffer1, pImageBuffer, imageBufferSize);
-
-						buffer1PylonReadable = true;
-						buffer1RawReadable = true;
-						cout << "thread " << thread_id << ": Finished writing buffer 1." << endl;
-					//}
-//					} else if (buffer2Writable) {
-//
-//						buffer2Writable = false;
-//						cout << "thread " << thread_id
-//								<< ": Start writing image number "
-//								<< numGrabbedImages << ". Writing buffer 2."
-//								<< endl;
-//
-//						// Copy image to raw image buffer1
-//						memcpy(rawImageBuffer2, pImageBuffer, imageBufferSize);
-//
-//						buffer2PylonReadable = true;
-//						buffer2RawReadable = true;
-//
-//						cout << "thread " << thread_id << ": Finished writing buffer 2." << endl;
-//					}
-
-				} else {
-					// If a buffer has been incompletely grabbed, the network bandwidth is possibly insufficient for transferring
-					// multiple images simultaneously. See note above c_maxCamerasToUse.
-					cout << "Error: " << ptrGrabResult->GetErrorCode() << " "
-							<< ptrGrabResult->GetErrorDescription() << endl;
-					numGrabError++;
-					buffer1RawReadable = false;
-				}
+			} else {
+				// If a buffer has been incompletely grabbed, the network bandwidth is possibly insufficient for transferring
+				// multiple images simultaneously. See note above c_maxCamerasToUse.
+				cout << "Error: " << ptrGrabResult->GetErrorCode() << " " << ptrGrabResult->GetErrorDescription() << endl;
+				numGrabError++;
+				buffer1RawReadable = false;
 			}
-
-			numGrabbedImages++;
-
-			// In case you want to trigger again you should wait for the camera
-			// to become trigger-ready before issuing the next action command.
-			// To avoid overtriggering you should call cameras[0].WaitForFrameTriggerReady
-			// (see Grab_UsingGrabLoopThread sample for details).
-			for (size_t i = 0; i < passedData->cameras->GetSize(); ++i) {
-				(*(passedData->cameras))[i].WaitForFrameTriggerReady(1000,
-						TimeoutHandling_ThrowException);
-			}
-
-			cout << "thread " << thread_id << ": Finished grabbing." << endl;
-
-		}
-		catch (const GenericException &e)
-		    {
-		        // Error handling
-		        cerr << "An exception occurred." << endl
-		        << e.GetDescription() << endl;
-		    }
-		catch (...) {
-			cout << "##################################################################################" << endl;
-			cout << "Error capturing";
-			cout << "##################################################################################" << endl;
 		}
 
+		numGrabbedImages++;
+
+		// In case you want to trigger again you should wait for the camera
+		// to become trigger-ready before issuing the next action command.
+		// To avoid overtriggering you should call cameras[0].WaitForFrameTriggerReady
+		// (see Grab_UsingGrabLoopThread sample for details).
+//		try {
+//			cout << "thread " << thread_id << ": Start waiting trigger ready" <<  endl;
+//			for (size_t i = 0; i < passedData->cameras->GetSize(); ++i) {
+//				(*(passedData->cameras))[0].WaitForFrameTriggerReady(10000,	TimeoutHandling_ThrowException);
+//			}
+//			cout << "thread " << thread_id << ": Finish waiting trigger ready" <<  endl;
+//		} catch (const GenericException &e) {
+//			// Error handling
+//			cout << "ERROR===============================================" << endl;
+//			cerr << "An exception occurred." << endl << e.GetDescription() << endl;
+//		}
+
+		cout << "thread " << thread_id << ": Finished grabbing." << endl;
 
 		pthread_barrier_wait(&thBarrier);
 
@@ -631,6 +738,7 @@ void* thCapture (void *threadarg) {
 
 	pthread_exit(NULL);
 }
+*/
 
 void* thSave (void *threadarg) {
 
@@ -645,59 +753,55 @@ void* thSave (void *threadarg) {
 
 		if (buffer1RawReadable) {
 
-//			buffer1RawReadable = false;
-//			buffer1FinishedSaving = false;
+			cout << "thread " << thread_id << ": Start saving image number " << imageNum << endl;
 
-			cout << "thread " << thread_id << ": Start saving image number " << imageNum << ". Reading buffer 1." << endl;
+			int cameraIndex = 0;
 
-			int cameraIndex = 1;
-
-			std::ostringstream s1;
+			// Write image file
+			ostringstream s1;
 			// Create image name files with ascending grabbed image numbers.
-			s1 << "/media/scanvan/Windows/Users/marcelo.kaihara.HEVS/Documents/img/image_" << cameraIndex << "_" << imageNum	<< ".raw";
-			std::string imageName(s1.str());
+			s1 << imageFolder << "/img_" << cameraIndex << "_" << imageNum	<< ".raw";
+			string imageName(s1.str());
+
+			ostringstream s2;
+			// Create image name files with ascending grabbed image numbers.
+			s2 << imageFolder << "/img_" << cameraIndex << "_" << imageNum << ".txt";
+			string imageCfgName(s2.str());
 
 			// Save the raw image into file
 			ofstream myFile (imageName, ios::out | ios::binary);
-			myFile.write ((char*)rawImageBuffer1,imageBufferSize);
-			myFile.close();
+			if (myFile.is_open()) {
+				myFile.write ((char*)rawImageBuffer1,imageBufferSize);
+				myFile.close();
+			} else {
+				cout << "Error writing image file " << imageName << endl;
+				terminateLoop = true;
+			}
 
-			cout << "thread " << thread_id << ": Finished saving from buffer 1." << endl;
+			// Write camera parameters
+			ofstream myFile2(imageCfgName);
+			if (myFile2.is_open()) {
+				myFile2 << "Camera Index: " << (imageData[cameraIndex]).cameraIdx << "\n";
+				time_t my_time = (imageData[cameraIndex]).captureTime;
+				myFile2 << "Capture Time: " << ctime(&my_time);
+				myFile2 << "Exposure Time: " << (imageData[cameraIndex]).exposureTime << "\n";
+				myFile2 << "Gain: " << (imageData[cameraIndex]).gain << "\n";
+				myFile2 << "Balance Red  : " << (imageData[cameraIndex]).balanceR << "\n";
+				myFile2 << "Balance Green: " << (imageData[cameraIndex]).balanceG << "\n";
+				myFile2 << "Balance Blue : " << (imageData[cameraIndex]).balanceB << "\n";
+				myFile2 << "Auto Exposure Time Continuous: " << (imageData[cameraIndex]).autoExpTime << "\n";
+				myFile2 << "Auto Gain Continuous: " << (imageData[cameraIndex]).autoGain << "\n";
+				myFile2.close();
+			} else {
+				cout << "Error writing image file " << imageCfgName << endl;
+				terminateLoop = true;
+			}
+
+
+			cout << "thread " << thread_id << ": Finished saving from buffer." << endl;
 			imageNum++;
 
-//			buffer1FinishedSaving = true;
-
 		}
-
-//		else if (buffer2RawReadable) {
-//
-//			buffer2RawReadable = false;
-//			buffer2FinishedSaving = false;
-//
-//			cout << "thread " << thread_id << ": Start saving image number " << imageNum << ". Reading buffer 2." << endl;
-//
-//			// When the cameras in the array are created the camera context value
-//			// is set to the index of the camera in the array.
-//			// The camera context is a user-settable value.
-//			// This value is attached to each grab result and can be used
-//			// to determine the camera that produced the grab result.
-//			int cameraIndex = 1;
-//
-//			std::ostringstream s1;
-//			// Create image name files with ascending grabbed image numbers.
-//			s1 << "./img/image_" << cameraIndex << "_" << imageNum << ".raw";
-//			std::string imageName(s1.str());
-//
-//			// Save the raw image into file
-//			ofstream myFile (imageName, ios::out | ios::binary);
-//			myFile.write ((char*)rawImageBuffer2,imageBufferSize);
-//			myFile.close();
-//
-//			cout << "thread " << thread_id << ": Finished saving from buffer 2." << endl;
-//			imageNum++;
-//
-//			buffer2FinishedSaving = true;
-//		}
 
 		pthread_barrier_wait(&thBarrier);
 		pthread_barrier_wait(&thBarrier);

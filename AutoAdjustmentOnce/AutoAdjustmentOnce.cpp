@@ -57,7 +57,7 @@ static const uint32_t c_maxCamerasToUse = 2;
 const int imageWidth = 3004;
 const int imageHeight = 3004;
 const int offsetX = 502;
-const int offsetY = 0;
+const int offsetY = 2;
 
 // Prototypes
 void AutoExposureOnce(CBaslerGigEInstantCameraArray& cameras, IGigETransportLayer *pTL, uint32_t DeviceKey, uint32_t GroupKey, String_t subnet);
@@ -163,6 +163,12 @@ int main(int argc, char* argv[])
 
 			cameras[i].Width.SetValue(imageWidth);
 			cameras[i].Height.SetValue(imageHeight);
+			if (IsWritable(cameras[i].OffsetX)) {
+				cameras[i].OffsetX.SetValue(offsetX);
+			}
+			if (IsWritable(cameras[i].OffsetY)) {
+				cameras[i].OffsetY.SetValue(offsetY);
+			}
 
 		}
 

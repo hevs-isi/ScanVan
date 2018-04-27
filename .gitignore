@@ -33,10 +33,16 @@
 
 *backup*
 *.bkp
-./Grab_UsingActionCommand
 *.cproject
 *.project
 Debug
 language.settings.xml
 .metadata
 *.prefs
+cameraparam.cfg*
+*gitignore
+./Grab_UsingActionCommand
+*.cfg
+*.cfg~
+
+
