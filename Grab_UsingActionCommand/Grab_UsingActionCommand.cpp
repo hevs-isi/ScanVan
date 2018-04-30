@@ -77,6 +77,10 @@ bool bufferRawReadable = false;
 
 // Barrier to synchronize the threads
 pthread_barrier_t thBarrier;
+// Markers for the barrier
+int barrier_0 = 0;
+int barrier_1 = 0;
+int barrier_2 = 0;
 
 // Passing arguments to the thread
 struct thread_data {
@@ -340,7 +344,11 @@ int main(int argc, char* argv[])
 
 			}
 
+			cout << "thread " << thread_id << ": Barrier 1" << endl;
+			barrier_0 = 1;
 			pthread_barrier_wait(&thBarrier);
+			cout << "thread " << thread_id << ": Barrier 2" << endl;
+			barrier_0 = 2;
 			pthread_barrier_wait(&thBarrier);
 		}
 
@@ -517,6 +525,8 @@ void* thCapture (void *threadarg) {
 			auto tnow = std::chrono::system_clock::now();
 			imData[cameraIndex].captureTime = std::chrono::system_clock::to_time_t(tnow);
 
+			cout << "thread " << thread_id << ": Barrier 1" << endl;
+			barrier_1 = 1;
 			pthread_barrier_wait(&thBarrier);
 
 			// Image grabbed successfully?
@@ -548,7 +558,10 @@ void* thCapture (void *threadarg) {
 				imageData[i].autoGain = imData[i].autoGain;
 				imageData[i].captureTime = imData[i].captureTime;
 
+				cout << "thread " << thread_id << ": Barrier 2" << endl;
+				barrier_1 = 2;
 				pthread_barrier_wait(&thBarrier);
+				cout << "-----------------------------------------------------------------" << endl;
 
 			} else {
 				// If a buffer has been incompletely grabbed, the network bandwidth is possibly insufficient for transferring
@@ -581,6 +594,12 @@ void* thCapture (void *threadarg) {
 		// Issue an action command
 		passedData->pTL->IssueActionCommand(passedData->DeviceKey, passedData->GroupKey, AllGroupMask, passedData->subnet);
 
+	}
+
+	// This is to put the barriers when the terminate loop is set to one while reading the camera parameters
+	if ((barrier_0 == 1)&(barrier_2 == 1)){
+		pthread_barrier_wait(&thBarrier);
+		pthread_barrier_wait(&thBarrier);
 	}
 
 	passedData->cameras->StopGrabbing();
@@ -626,32 +645,46 @@ void* thSave (void *threadarg) {
 				terminateLoop = true;
 			}
 
-			// Write camera parameters
-			ofstream myFile2(imageCfgName);
-			if (myFile2.is_open()) {
-				myFile2 << "Camera Index: " << (imageData[cameraIndex]).cameraIdx << "\n";
-				time_t my_time = (imageData[cameraIndex]).captureTime;
-				myFile2 << "Capture Time: " << ctime(&my_time);
-				myFile2 << "Exposure Time: " << (imageData[cameraIndex]).exposureTime << "\n";
-				myFile2 << "Gain: " << (imageData[cameraIndex]).gain << "\n";
-				myFile2 << "Balance Red  : " << (imageData[cameraIndex]).balanceR << "\n";
-				myFile2 << "Balance Green: " << (imageData[cameraIndex]).balanceG << "\n";
-				myFile2 << "Balance Blue : " << (imageData[cameraIndex]).balanceB << "\n";
-				myFile2 << "Auto Exposure Time Continuous: " << (imageData[cameraIndex]).autoExpTime << "\n";
-				myFile2 << "Auto Gain Continuous: " << (imageData[cameraIndex]).autoGain << "\n";
-				myFile2.close();
-			} else {
-				cout << "Error writing image file " << imageCfgName << endl;
-				terminateLoop = true;
+			if (!terminateLoop) {
+				// Write camera parameters
+				ofstream myFile2(imageCfgName);
+				if (myFile2.is_open()) {
+					myFile2 << "Camera Index: "
+							<< (imageData[cameraIndex]).cameraIdx << "\n";
+					time_t my_time = (imageData[cameraIndex]).captureTime;
+					myFile2 << "Capture Time: " << ctime(&my_time);
+					myFile2 << "Exposure Time: "
+							<< (imageData[cameraIndex]).exposureTime << "\n";
+					myFile2 << "Gain: " << (imageData[cameraIndex]).gain
+							<< "\n";
+					myFile2 << "Balance Red  : "
+							<< (imageData[cameraIndex]).balanceR << "\n";
+					myFile2 << "Balance Green: "
+							<< (imageData[cameraIndex]).balanceG << "\n";
+					myFile2 << "Balance Blue : "
+							<< (imageData[cameraIndex]).balanceB << "\n";
+					myFile2 << "Auto Exposure Time Continuous: "
+							<< (imageData[cameraIndex]).autoExpTime << "\n";
+					myFile2 << "Auto Gain Continuous: "
+							<< (imageData[cameraIndex]).autoGain << "\n";
+					myFile2.close();
+
+					cout << "thread " << thread_id << ": Finished saving from buffer." << endl;
+					imageNum++;
+
+				} else {
+					cout << "Error writing image file " << imageCfgName << endl;
+					terminateLoop = true;
+				}
 			}
-
-
-			cout << "thread " << thread_id << ": Finished saving from buffer." << endl;
-			imageNum++;
 
 		}
 
+		cout << "thread " << thread_id << ": Barrier 1" << endl;
+		barrier_2 = 1;
 		pthread_barrier_wait(&thBarrier);
+		cout << "thread " << thread_id << ": Barrier 2" << endl;
+		barrier_2 = 2;
 		pthread_barrier_wait(&thBarrier);
 	}
 
@@ -726,8 +759,8 @@ double PlotHistogram(const Mat &src) {
 	line(histImage, Point(bin_w * med , 0), Point(bin_w * med, hist_h), Scalar(0,255,0), 2, 8, 0);
 
 	/// Display
-	namedWindow("calcHist Demo", CV_WINDOW_AUTOSIZE);
-	imshow("calcHist Demo", histImage);
+	namedWindow("Histogram", CV_WINDOW_AUTOSIZE);
+	imshow("Histogram", histImage);
 
 	waitKey(1);
 
