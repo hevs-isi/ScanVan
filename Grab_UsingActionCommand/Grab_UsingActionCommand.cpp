@@ -597,7 +597,7 @@ void* thCapture (void *threadarg) {
 	}
 
 	// This is to put the barriers when the terminate loop is set to one while reading the camera parameters
-	if ((barrier_0 == 1)&(barrier_2 == 1)){
+	if (barrier_2 == 1){
 		pthread_barrier_wait(&thBarrier);
 		pthread_barrier_wait(&thBarrier);
 	}
