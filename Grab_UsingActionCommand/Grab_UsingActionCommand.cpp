@@ -242,7 +242,9 @@ int main(int argc, char* argv[])
 
 			// This sets the value of the packet size on the camera to 9000
 			// On the host size, change the MTU to 9014 and the maximum UDP receive buffer size to 2097152
-			cameras[i].GevSCPSPacketSize.SetValue(8000);
+			while (cameras[i].GevSCPSPacketSize.GetValue()!=8000) {
+				cameras[i].GevSCPSPacketSize.SetValue(8000);
+			}
 			cameras[i].GevSCPD.SetValue(0);
 			cameras[i].MaxNumBuffer.SetValue(20);
 
@@ -265,6 +267,8 @@ int main(int argc, char* argv[])
 			cameras[0].ExposureAuto.SetValue(ExposureAuto_Continuous);
 		if (autoGainCont)
 			cameras[0].GainAuto.SetValue(GainAuto_Continuous);
+
+
 
 		// For measuring the grabbing time
 		high_resolution_clock::time_point t1;
@@ -483,7 +487,7 @@ void* thCapture (void *threadarg) {
 
 	image_data imData[2]; // Struct where information of the images are stored
 
-	cout << "thread " << thread_id << ": Start getting parameters from camera " << endl;
+	cout << "\tthread " << thread_id << ": Start getting parameters from camera " << endl;
 
 	// Get the information about the cameras and store temporarily in a struct
 	for (size_t i = 0; i < (*(passedData->cameras)).GetSize(); ++i) {
@@ -506,26 +510,28 @@ void* thCapture (void *threadarg) {
 	passedData->pTL->IssueActionCommand(passedData->DeviceKey, passedData->GroupKey, AllGroupMask, passedData->subnet);
 
 	while (!terminateLoop) {
+		try {
 
 		// This smart pointer will receive the grab result data.
 		CBaslerGigEGrabResultPtr ptrGrabResult;
 
 		// Retrieve images from all cameras.
-		for (size_t i = 0; i < passedData->usableDeviceInfos->size() && passedData->cameras->IsGrabbing(); ++i) {
+		//for (size_t i = 0; i < passedData->usableDeviceInfos->size() && passedData->cameras->IsGrabbing(); ++i) {
+		size_t i = 0;
 
-			cout << "thread " << thread_id << ": Retrieve result" << endl;
+			cout << "\tthread " << thread_id << ": Retrieve result" << endl;
 			// CInstantCameraArray::RetrieveResult will return grab results in the order they arrive.
 			passedData->cameras->RetrieveResult(DefaultTimeout_ms, ptrGrabResult, TimeoutHandling_ThrowException);
-			cout << "thread " << thread_id << ": End retrieve result" << endl;
+			cout << "\tthread " << thread_id << ": End retrieve result" << endl;
 
-			cout << "thread " << thread_id << ": Get camera index" << endl;
+			cout << "\tthread " << thread_id << ": Get camera index" << endl;
 			intptr_t cameraIndex = ptrGrabResult->GetCameraContext();
-			cout << "thread " << thread_id << ": Got camera index" << endl;
+			cout << "\tthread " << thread_id << ": Got camera index" << endl;
 
 			auto tnow = std::chrono::system_clock::now();
 			imData[cameraIndex].captureTime = std::chrono::system_clock::to_time_t(tnow);
 
-			cout << "thread " << thread_id << ": Barrier 1" << endl;
+			cout << "\tthread " << thread_id << ": Barrier 1" << endl;
 			barrier_1 = 1;
 			pthread_barrier_wait(&thBarrier);
 
@@ -534,18 +540,16 @@ void* thCapture (void *threadarg) {
 
 				const uint8_t *pImageBuffer = (uint8_t *) ptrGrabResult->GetBuffer();
 
-				cout << "thread " << thread_id << ": Start writing image number " << numGrabbedImages << endl;
+				cout << "\tthread " << thread_id << ": Start copying buffer image number " << numGrabbedImages << endl;
 
 				// Copy image to raw image buffer1
 				memcpy(rawImageBuffer, pImageBuffer, imageBufferSize);
 
 				bufferOpenCvReadable = true;
 				bufferRawReadable = true;
-				cout << "thread " << thread_id << ": Finished writing buffer." << endl;
+				cout << "\tthread " << thread_id << ": Finished copying buffer" << endl;
 
 				numGrabbedImages++;
-
-				cout << "thread " << thread_id << ": Start getting parameters from camera " << endl;
 
 				// Save the attributes into a global struct so that it can be saved from a different thread
 				imageData[i].cameraIdx = imData[i].cameraIdx;
@@ -558,10 +562,6 @@ void* thCapture (void *threadarg) {
 				imageData[i].autoGain = imData[i].autoGain;
 				imageData[i].captureTime = imData[i].captureTime;
 
-				cout << "thread " << thread_id << ": Barrier 2" << endl;
-				barrier_1 = 2;
-				pthread_barrier_wait(&thBarrier);
-				cout << "-----------------------------------------------------------------" << endl;
 
 			} else {
 				// If a buffer has been incompletely grabbed, the network bandwidth is possibly insufficient for transferring
@@ -572,27 +572,75 @@ void* thCapture (void *threadarg) {
 				bufferRawReadable = false;
 			}
 
+		//}
+
+		} catch (const GenericException &e) {
+				// Error handling
+				cerr << "An exception occurred." << endl << e.GetDescription()
+						<< endl;
+				// Comment the following two lines to disable waiting on exit.
+				cerr << endl << "Press Enter to continue." << endl;
+				while (cin.get() != '\n');
 		}
 
-		// Get the information about the cameras and store temporarily in a struct
-		for (size_t i = 0; i < (*(passedData->cameras)).GetSize(); ++i) {
-			imData[i].cameraIdx = i;
-			imData[i].exposureTime =	(*(passedData->cameras))[i].ExposureTimeAbs.GetValue();
-			imData[i].gain = (*(passedData->cameras))[i].GainRaw.GetValue();
-			(*(passedData->cameras))[i].BalanceRatioSelector.SetValue(BalanceRatioSelector_Red);
-			imData[i].balanceR = (*(passedData->cameras))[i].BalanceRatioAbs.GetValue();
-			(*(passedData->cameras))[i].BalanceRatioSelector.SetValue(BalanceRatioSelector_Green);
-			imData[i].balanceG = (*(passedData->cameras))[i].BalanceRatioAbs.GetValue();
-			(*(passedData->cameras))[i].BalanceRatioSelector.SetValue(BalanceRatioSelector_Blue);
-			imData[i].balanceB = (*(passedData->cameras))[i].BalanceRatioAbs.GetValue();
-			imData[i].autoExpTime = (int) autoExpTimeCont;
-			imData[i].autoGain = (int) autoGainCont;
+		try {
+			cout << "\tthread " << thread_id << ": Wait for Trigger Ready" << endl;
+			// Wait for trigger ready
+			((*(passedData->cameras))[0].WaitForFrameTriggerReady(10000, TimeoutHandling_ThrowException));
+
+			cout << "\tthread " << thread_id << " Start getting parameters" << endl;
+			// Get the information about the cameras and store temporarily in a struct
+			for (size_t i = 0; i < (*(passedData->cameras)).GetSize(); ++i) {
+				imData[i].cameraIdx = i;
+				cout << "\tthread " << thread_id << " Get exposure time" << endl;
+				imData[i].exposureTime =
+				(*(passedData->cameras))[i].ExposureTimeAbs.GetValue();
+				cout << "\tthread " << thread_id << " Get exposure gain" << endl;
+				imData[i].gain = (*(passedData->cameras))[i].GainRaw.GetValue();
+				cout << "\tthread " << thread_id << " Set balance channel R"
+				<< endl;
+				(*(passedData->cameras))[i].BalanceRatioSelector.SetValue(
+						BalanceRatioSelector_Red);
+				cout << "\tthread " << thread_id << " Get value balance channel R"
+				<< endl;
+				imData[i].balanceR =
+				(*(passedData->cameras))[i].BalanceRatioAbs.GetValue();
+				cout << "\tthread " << thread_id << " Set balance channel G"
+				<< endl;
+				(*(passedData->cameras))[i].BalanceRatioSelector.SetValue(
+						BalanceRatioSelector_Green);
+				cout << "\tthread " << thread_id << " Get value balance channel R"
+				<< endl;
+				imData[i].balanceG =
+				(*(passedData->cameras))[i].BalanceRatioAbs.GetValue();
+				cout << "\tthread " << thread_id << " Set balance channel B"
+				<< endl;
+				(*(passedData->cameras))[i].BalanceRatioSelector.SetValue(
+						BalanceRatioSelector_Blue);
+				cout << "\tthread " << thread_id << " Get value balance channel B"
+				<< endl;
+				imData[i].balanceB =
+				(*(passedData->cameras))[i].BalanceRatioAbs.GetValue();
+				imData[i].autoExpTime = (int) autoExpTimeCont;
+				imData[i].autoGain = (int) autoGainCont;
+			}
+		} catch (const GenericException &e) {
+			// Error handling
+			cerr << "An exception occurred." << endl << e.GetDescription()
+					<< endl;
+			// Comment the following two lines to disable waiting on exit.
+			cerr << endl << "Press Enter to continue." << endl;
+			while (cin.get() != '\n');
 		}
 
-		// Wait for trigger ready
-		((*(passedData->cameras))[0].WaitForFrameTriggerReady(10000, TimeoutHandling_ThrowException));
 		// Issue an action command
+		cout << "\tthread " << thread_id << ": Issue Action Command" << endl;
 		passedData->pTL->IssueActionCommand(passedData->DeviceKey, passedData->GroupKey, AllGroupMask, passedData->subnet);
+
+		cout << "\tthread " << thread_id << ": Barrier 2" << endl;
+		barrier_1 = 2;
+		pthread_barrier_wait(&thBarrier);
+		cout << "-----------------------------------------------------------------" << endl;
 
 	}
 
@@ -620,7 +668,7 @@ void* thSave (void *threadarg) {
 
 		if (bufferRawReadable) {
 
-			cout << "thread " << thread_id << ": Start saving image number " << imageNum << endl;
+			cout << "\t\tthread " << thread_id << ": Start saving image number " << imageNum << endl;
 
 			int cameraIndex = 0;
 
@@ -669,7 +717,7 @@ void* thSave (void *threadarg) {
 							<< (imageData[cameraIndex]).autoGain << "\n";
 					myFile2.close();
 
-					cout << "thread " << thread_id << ": Finished saving from buffer." << endl;
+					cout << "\t\tthread " << thread_id << ": Finished saving from buffer." << endl;
 					imageNum++;
 
 				} else {
@@ -680,10 +728,10 @@ void* thSave (void *threadarg) {
 
 		}
 
-		cout << "thread " << thread_id << ": Barrier 1" << endl;
+		cout << "\t\tthread " << thread_id << ": Barrier 1" << endl;
 		barrier_2 = 1;
 		pthread_barrier_wait(&thBarrier);
-		cout << "thread " << thread_id << ": Barrier 2" << endl;
+		cout << "\t\tthread " << thread_id << ": Barrier 2" << endl;
 		barrier_2 = 2;
 		pthread_barrier_wait(&thBarrier);
 	}

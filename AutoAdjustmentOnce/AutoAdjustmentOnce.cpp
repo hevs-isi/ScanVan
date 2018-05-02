@@ -351,6 +351,12 @@ int main(int argc, char* argv[])
 
 					// Plot the histogram
 					PlotHistogram(openCvImage);
+
+				} else {
+							// If a buffer has been incompletely grabbed, the network bandwidth is possibly insufficient for transferring
+							// multiple images simultaneously. See note above c_maxCamerasToUse.
+							cout << "Error: " << ptrGrabResult->GetErrorCode() << " "
+									<< ptrGrabResult->GetErrorDescription() << endl;
 				}
 
 			}
@@ -508,6 +514,11 @@ void AutoExposureOnce(CBaslerGigEInstantCameraArray& cameras, IGigETransportLaye
 			// Plot the histogram
 			PlotHistogram(openCvImage);
 
+		} else {
+			// If a buffer has been incompletely grabbed, the network bandwidth is possibly insufficient for transferring
+			// multiple images simultaneously. See note above c_maxCamerasToUse.
+			cout << "Error: " << ptrGrabResult->GetErrorCode() << " "
+					<< ptrGrabResult->GetErrorDescription() << endl;
 		}
 		++n;
 
@@ -626,7 +637,14 @@ void AutoGainOnce(CBaslerGigEInstantCameraArray& cameras, IGigETransportLayer *p
 
 			// Plot the histogram
 			PlotHistogram(openCvImage);
+
+		} else {
+				// If a buffer has been incompletely grabbed, the network bandwidth is possibly insufficient for transferring
+				// multiple images simultaneously. See note above c_maxCamerasToUse.
+				cout << "Error: " << ptrGrabResult->GetErrorCode() << " "
+						<< ptrGrabResult->GetErrorDescription() << endl;
 		}
+
 		++n;
 
 		cameras[0].WaitForFrameTriggerReady(500, TimeoutHandling_ThrowException);
