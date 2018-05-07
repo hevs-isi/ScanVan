@@ -74,6 +74,7 @@ uint8_t rawImageBuffer[imageBufferSize];
 // Flags to control access to the buffers
 bool bufferOpenCvReadable = false;
 bool bufferRawReadable = false;
+bool saveImage = false;
 
 // Barrier to synchronize the threads
 pthread_barrier_t thBarrier;
@@ -341,6 +342,8 @@ int main(int argc, char* argv[])
 
 				if (key == 113) // if 'q' key is pressed
 					terminateLoop = true;
+				if (key == 116) // if 't' key is pressed
+					saveImage = true;
 
 				cout << "thread " << thread_id << ": Finished displaying buffer." << endl;
 				imageNum++;
@@ -666,7 +669,7 @@ void* thSave (void *threadarg) {
 
 	while (!terminateLoop) {
 
-		if (bufferRawReadable) {
+		if (bufferRawReadable && saveImage) {
 
 			cout << "\t\tthread " << thread_id << ": Start saving image number " << imageNum << endl;
 
@@ -719,6 +722,8 @@ void* thSave (void *threadarg) {
 
 					cout << "\t\tthread " << thread_id << ": Finished saving from buffer." << endl;
 					imageNum++;
+
+					saveImage = false;
 
 				} else {
 					cout << "Error writing image file " << imageCfgName << endl;
