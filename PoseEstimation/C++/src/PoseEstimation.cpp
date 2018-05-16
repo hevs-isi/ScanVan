@@ -89,13 +89,13 @@ int loadVector (string inputFileName, vector<Point_t> &p)
 int loadVectors (vector<Point_t> &p3d_1, vector<Point_t> &p3d_2, vector<Point_t> &p3d_3)
 {
 
-	string inputFileName = "/home/scanvandev/ScanVan/PoseEstimation/p3d_1.txt";
+	string inputFileName = "/home/scanvandev/ScanVan/PoseEstimation/C++/p3d_1.txt";
 	if (loadVector(inputFileName, p3d_1))
 		return 1;
-	inputFileName = "/home/scanvandev/ScanVan/PoseEstimation/p3d_2.txt";
+	inputFileName = "/home/scanvandev/ScanVan/PoseEstimation/C++/p3d_2.txt";
 	if (loadVector(inputFileName, p3d_2))
 		return 1;
-	inputFileName = "/home/scanvandev/ScanVan/PoseEstimation/p3d_3.txt";
+	inputFileName = "/home/scanvandev/ScanVan/PoseEstimation/C++/p3d_3.txt";
 	if (loadVector(inputFileName, p3d_3))
 		return 1;
 
@@ -454,7 +454,7 @@ int main() {
 
 	pose_scene (p3d_1, p3d_2, p3d_3, sv_r_12, sv_r_23, sv_r_31, sv_t_12, sv_t_23, sv_t_31, sv_scene);
 
-	if (writeVector ("/home/scanvandev/ScanVan/PoseEstimation/sv_scene.txt", sv_scene)) {
+	if (writeVector ("/home/scanvandev/ScanVan/PoseEstimation/C++/sv_scene.txt", sv_scene)) {
 		cerr << "Error writing file" << endl;
 		exit(1);
 	}
