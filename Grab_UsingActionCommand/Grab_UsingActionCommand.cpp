@@ -62,10 +62,16 @@ using namespace cv;
 static const uint32_t c_maxCamerasToUse = 2;
 
 // Parameters for the image
-const int imageWidth = 3004;
-const int imageHeight = 3004;
-const int offsetX = 502;
-const int offsetY = 2;
+const int imageWidth = 3008;
+const int imageHeight = 3008;
+const int offsetX = 552;
+const int offsetY = 0;
+// Parameters for the AOI1
+const int aoiWidth = (3131 - 958);
+const int aoiHeight = (1520 - 595);
+const int aoiOffsetX = 958;
+const int aoiOffsetY = 595;
+const int autoTargetVal = 100;
 
 // Image buffers
 const unsigned long int imageBufferSize = imageWidth * imageHeight; // Unpacked 8-bit per pixel
@@ -246,14 +252,15 @@ int main(int argc, char* argv[])
 			while (cameras[i].GevSCPSPacketSize.GetValue()!=8000) {
 				cameras[i].GevSCPSPacketSize.SetValue(8000);
 			}
-			cameras[i].GevSCPD.SetValue(0);
+			cameras[i].GevSCPD.SetValue(50);
 			cameras[i].MaxNumBuffer.SetValue(20);
 
 			cameras[i].ExposureTimeAbs.SetValue(expTime[i]);
 			cameras[i].GainRaw.SetValue(gain[i]);
 
-			cameras[i].Width.SetValue(imageWidth);
-			cameras[i].Height.SetValue(imageHeight);
+			cameras[i].Width.SetValue(100);
+			cameras[i].Height.SetValue(100);
+
 			if (IsWritable(cameras[i].OffsetX)) {
 				cameras[i].OffsetX.SetValue(offsetX);
 			}
@@ -261,6 +268,16 @@ int main(int argc, char* argv[])
 				cameras[i].OffsetY.SetValue(offsetY);
 			}
 
+			cameras[i].Width.SetValue(imageWidth);
+			cameras[i].Height.SetValue(imageHeight);
+
+			cameras[i].AutoFunctionAOISelector.SetValue(AutoFunctionAOISelector_AOI1);
+			cameras[i].AutoFunctionAOIWidth.SetValue(aoiWidth);
+			cameras[i].AutoFunctionAOIHeight.SetValue(aoiHeight);
+			cameras[i].AutoFunctionAOIOffsetX.SetValue(aoiOffsetX);
+			cameras[i].AutoFunctionAOIOffsetY.SetValue(aoiOffsetY);
+
+			cameras[i].AutoTargetValue.SetValue(autoTargetVal);
 		}
 
 		// Sets auto adjustments continuous
@@ -484,7 +501,7 @@ void* thCapture (void *threadarg) {
 
 	int thread_id = passedData->thread_id;
 
-	const int DefaultTimeout_ms = 10000;
+	const int DefaultTimeout_ms = 50000;
 
 	passedData->cameras->StartGrabbing();
 
@@ -508,7 +525,7 @@ void* thCapture (void *threadarg) {
 	}
 
 	// Wait for trigger ready
-	((*(passedData->cameras))[0].WaitForFrameTriggerReady(10000, TimeoutHandling_ThrowException));
+	((*(passedData->cameras))[0].WaitForFrameTriggerReady(50000, TimeoutHandling_ThrowException));
 	// Isuue an action command
 	passedData->pTL->IssueActionCommand(passedData->DeviceKey, passedData->GroupKey, AllGroupMask, passedData->subnet);
 
