@@ -289,7 +289,108 @@ int main(int argc, char** argv) {
 	}
 	cout << "Average duration = " << accum/n_img << " microseconds" << endl << flush;
 
-	namedWindow("Rectified", WINDOW_NORMAL);
+
+
+	/* Transform the images from a directory */
+	for (int i = 0; i <= 161; ++i) {
+		// load the images and store them in a vector
+		//Mat distorted = imread(image_list[i], IMREAD_COLOR|IMREAD_ANYDEPTH);
+
+		ostringstream s1;
+		// Create image name files with ascending grabbed image numbers.
+		s1 << "/home/scanvandev/ScanVan/Calibration/img/trajectoryA_fixed" << "/img_0_" << i << ".bmp";
+		string imageFileName(s1.str());
+
+		Mat distorted = imread(imageFileName, IMREAD_COLOR);
+
+		cout << imageFileName << endl << flush;
+
+		// main remapping function that undistort the images
+		cv::remap(distorted, undistorted, map1, map2, INTER_CUBIC, BORDER_CONSTANT);
+
+		ostringstream s2;
+		s2 << "/home/scanvandev/ScanVan/Calibration/img/trajectoryA_fixed/equirectangular" << "/img_equi_0_" << i << ".bmp";
+		string outputFileName(s2.str());
+
+		//save images into file
+		imwrite(outputFileName, undistorted);
+	}
+
+	for (int i = 0; i <= 188; ++i) {
+			// load the images and store them in a vector
+			//Mat distorted = imread(image_list[i], IMREAD_COLOR|IMREAD_ANYDEPTH);
+
+			ostringstream s1;
+			// Create image name files with ascending grabbed image numbers.
+			s1 << "/home/scanvandev/ScanVan/Calibration/img/trajectoryB_auto" << "/img_0_" << i << ".bmp";
+			string imageFileName(s1.str());
+
+			Mat distorted = imread(imageFileName, IMREAD_COLOR);
+
+			cout << imageFileName << endl << flush;
+
+			// main remapping function that undistort the images
+			cv::remap(distorted, undistorted, map1, map2, INTER_CUBIC, BORDER_CONSTANT);
+
+			ostringstream s2;
+			s2 << "/home/scanvandev/ScanVan/Calibration/img/trajectoryB_auto/equirectangular" << "/img_equi_0_" << i << ".bmp";
+			string outputFileName(s2.str());
+
+			//save images into file
+			imwrite(outputFileName, undistorted);
+	}
+
+	for (int i = 0; i <= 183; ++i) {
+				// load the images and store them in a vector
+				//Mat distorted = imread(image_list[i], IMREAD_COLOR|IMREAD_ANYDEPTH);
+
+				ostringstream s1;
+				// Create image name files with ascending grabbed image numbers.
+				s1 << "/home/scanvandev/ScanVan/Calibration/img/trajectoryC_fixed" << "/img_0_" << i << ".bmp";
+				string imageFileName(s1.str());
+
+				Mat distorted = imread(imageFileName, IMREAD_COLOR);
+
+				cout << imageFileName << endl << flush;
+
+				// main remapping function that undistort the images
+				cv::remap(distorted, undistorted, map1, map2, INTER_CUBIC, BORDER_CONSTANT);
+
+				ostringstream s2;
+				s2 << "/home/scanvandev/ScanVan/Calibration/img/trajectoryC_fixed/equirectangular" << "/img_equi_0_" << i << ".bmp";
+				string outputFileName(s2.str());
+
+				//save images into file
+				imwrite(outputFileName, undistorted);
+	}
+
+	for (int i = 0; i <= 17; ++i) {
+					// load the images and store them in a vector
+					//Mat distorted = imread(image_list[i], IMREAD_COLOR|IMREAD_ANYDEPTH);
+
+					ostringstream s1;
+					// Create image name files with ascending grabbed image numbers.
+					s1 << "/home/scanvandev/ScanVan/Calibration/img/trajectoryD_calib" << "/img_0_" << i << ".bmp";
+					string imageFileName(s1.str());
+
+					Mat distorted = imread(imageFileName, IMREAD_COLOR);
+
+					cout << imageFileName << endl << flush;
+
+					// main remapping function that undistort the images
+					cv::remap(distorted, undistorted, map1, map2, INTER_CUBIC, BORDER_CONSTANT);
+
+					ostringstream s2;
+					s2 << "/home/scanvandev/ScanVan/Calibration/img/trajectoryD_calib/equirectangular" << "/img_equi_0_" << i << ".bmp";
+					string outputFileName(s2.str());
+
+					//save images into file
+					imwrite(outputFileName, undistorted);
+	}
+
+
+
+	/*namedWindow("Rectified", WINDOW_NORMAL);
 	for (int i = 0; i < n_img; ++i) {
 		//Mat distorted = imread(image_list[i], IMREAD_GRAYSCALE);
 		Mat distorted = imread(image_list[i], IMREAD_COLOR|IMREAD_ANYDEPTH);
@@ -304,7 +405,7 @@ int main(int argc, char** argv) {
 		resizeWindow("Rectified", imageSizeUndistort.width,	imageSizeUndistort.height);
 		waitKey(0);
 	}
-
+*/
 
 
 }
