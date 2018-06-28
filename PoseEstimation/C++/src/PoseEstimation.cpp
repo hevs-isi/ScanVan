@@ -28,6 +28,9 @@ typedef struct Point {
 
 typedef numeric_limits<double> dbl;
 
+// To count the number of operations
+int numMul(0), numMulAdd(0), numAdd(0),numDeterm(0), numDiv(0), numSVD(0), numMatInv(0), numSqrt(0);
+
 void printMatrix(Mat M) {
 	cout << "Type of matrix: " << M.type() << endl;
 	// Don't print empty matrices
@@ -129,9 +132,22 @@ int writeVector (string outputFileName, vector<Point_t> &sv_scene) {
 
 void svd_rotation (const Mat &v, const Mat &u, Mat &vmu)
 {
+	//int numDeterm(0),numMulAdd(0), numMul(0);
+
 	Mat m = Mat::eye(3, 3, CV_64FC1);
 	m.at<double>(2, 2) = determinant (v * u);
+	numMulAdd += 2 * 3;
+	numMul += 3;
+	numDeterm ++;
+
 	vmu = v * m * u;
+	numMulAdd += 3 * 3 + 3 * 3;
+
+	/*cout << "svd_rotation:" << endl;
+	cout << " #numMul: " << numMul << endl;
+	cout << " #numMulAdd: " << numMulAdd << endl;
+	cout << " #numDeterm: " << numDeterm << endl;
+*/
 }
 
 void estimation_rot_trans (const vector<Point_t> &p3d_1, const vector<Point_t> &p3d_2, const vector<Point_t> &p3d_3,
@@ -139,6 +155,7 @@ void estimation_rot_trans (const vector<Point_t> &p3d_1, const vector<Point_t> &
 						   Mat &sv_r_12, Mat &sv_r_23, Mat &sv_r_31, Mat &sv_t_12, Mat &sv_t_23, Mat &sv_t_31)
 {
 
+	//int numMul(0), numMulAdd(0), numDiv(0), numAdd(0), numSVD(0);
 	vector<Point_t> p3d_1_exp, p3d_2_exp, p3d_3_exp;
 	Point_t p;
 	int length = p3d_1.size();
@@ -149,18 +166,21 @@ void estimation_rot_trans (const vector<Point_t> &p3d_1, const vector<Point_t> &
 		p.y = p3d_1[i].y * sv_u[i];
 		p.z = p3d_1[i].z * sv_u[i];
 		p3d_1_exp.push_back(p);
+		numMul += 3;
 	}
 	for (int i=0; i<length; ++i) {
 		p.x = p3d_2[i].x * sv_v[i];
 		p.y = p3d_2[i].y * sv_v[i];
 		p.z = p3d_2[i].z * sv_v[i];
 		p3d_2_exp.push_back(p);
+		numMul += 3;
 	}
 	for (int i=0; i<length; ++i) {
 		p.x = p3d_3[i].x * sv_w[i];
 		p.y = p3d_3[i].y * sv_w[i];
 		p.z = p3d_3[i].z * sv_w[i];
 		p3d_3_exp.push_back(p);
+		numMul += 3;
 	}
 
 	// Compute centroids of the point sets
@@ -171,28 +191,34 @@ void estimation_rot_trans (const vector<Point_t> &p3d_1, const vector<Point_t> &
 		sv_cent_1.x += p3d_1_exp[i].x;
 		sv_cent_1.y += p3d_1_exp[i].y;
 		sv_cent_1.z += p3d_1_exp[i].z;
+		numAdd += 3;
 	}
 	sv_cent_1.x /= length;
 	sv_cent_1.y /= length;
 	sv_cent_1.z /= length;
+	numDiv += 3;
 
 	for (int i = 0; i < length; ++i) {
 		sv_cent_2.x += p3d_2_exp[i].x;
 		sv_cent_2.y += p3d_2_exp[i].y;
 		sv_cent_2.z += p3d_2_exp[i].z;
+		numAdd += 3;
 	}
 	sv_cent_2.x /= length;
 	sv_cent_2.y /= length;
 	sv_cent_2.z /= length;
+	numDiv += 3;
 
 	for (int i = 0; i < length; ++i) {
 		sv_cent_3.x += p3d_3_exp[i].x;
 		sv_cent_3.y += p3d_3_exp[i].y;
 		sv_cent_3.z += p3d_3_exp[i].z;
+		numAdd += 3;
 	}
 	sv_cent_3.x /= length;
 	sv_cent_3.y /= length;
 	sv_cent_3.z /= length;
+	numDiv += 3;
 
 	// Compute the centered vectors
 	Mat sv_diff_1 (length, 3, CV_64FC1);
@@ -203,18 +229,21 @@ void estimation_rot_trans (const vector<Point_t> &p3d_1, const vector<Point_t> &
 		sv_diff_1.at<double>(i, 0) = p3d_1_exp[i].x - sv_cent_1.x;
 		sv_diff_1.at<double>(i, 1) = p3d_1_exp[i].y - sv_cent_1.y;
 		sv_diff_1.at<double>(i, 2) = p3d_1_exp[i].z - sv_cent_1.z;
+		numAdd += 3;
 	}
 
 	for (int i = 0; i < length; ++i) {
 		sv_diff_2.at<double>(i, 0) = p3d_2_exp[i].x - sv_cent_2.x;
 		sv_diff_2.at<double>(i, 1) = p3d_2_exp[i].y - sv_cent_2.y;
 		sv_diff_2.at<double>(i, 2) = p3d_2_exp[i].z - sv_cent_2.z;
+		numAdd += 3;
 	}
 
 	for (int i = 0; i < length; ++i) {
 		sv_diff_3.at<double>(i, 0) = p3d_3_exp[i].x - sv_cent_3.x;
 		sv_diff_3.at<double>(i, 1) = p3d_3_exp[i].y - sv_cent_3.y;
 		sv_diff_3.at<double>(i, 2) = p3d_3_exp[i].z - sv_cent_3.z;
+		numAdd += 3;
 	}
 
 	// Compute the covariance matrices
@@ -225,6 +254,8 @@ void estimation_rot_trans (const vector<Point_t> &p3d_1, const vector<Point_t> &
 	sv_corr_12 = sv_diff_1.t() * sv_diff_2;
 	sv_corr_23 = sv_diff_2.t() * sv_diff_3;
 	sv_corr_31 = sv_diff_3.t() * sv_diff_1;
+	numMulAdd += (length-1) * 3 * 3;
+	numMul += 3 * 3;
 
 	// Compute the singular value decompositions
 	Mat w;
@@ -234,6 +265,7 @@ void estimation_rot_trans (const vector<Point_t> &p3d_1, const vector<Point_t> &
 	SVDecomp (sv_corr_12, w, svd_U_12, svd_V_12t);
 	SVDecomp (sv_corr_23, w, svd_U_23, svd_V_23t);
 	SVDecomp (sv_corr_31, w, svd_U_31, svd_V_31t);
+	numSVD += 3;
 
 	Mat svd_V_12 = svd_V_12t.t();
 	Mat svd_U_12t = svd_U_12.t();
@@ -265,13 +297,28 @@ void estimation_rot_trans (const vector<Point_t> &p3d_1, const vector<Point_t> &
 	sv_t_12 = sv_cent_2v - (sv_r_12 * sv_cent_1v.t()).t();
 	sv_t_23 = sv_cent_3v - (sv_r_23 * sv_cent_2v.t()).t();
 	sv_t_31 = sv_cent_1v - (sv_r_31 * sv_cent_3v.t()).t();
+	numMulAdd += (2 * 3) * 3;
+	numMul += 3 * 3;
+	numAdd += 3 * 3;
 
+/*
+	cout << "estimation_rot_trans:" << endl;
+	cout << " #Add: " << numAdd;
+	cout << " #Mul: " << numMul;
+	cout << " #MulAdd: " << numMulAdd;
+	cout << " #SVDcomp: " << numSVD;
+	cout << " #Div: " << numDiv;
+	cout << endl;
+*/
 }
 
 void intersection (const Mat &liste_p1, const Mat &liste_p2, const Mat &liste_p3,
 				   const Mat &liste_azim1, const Mat &liste_azim2, const Mat &liste_azim3,
 				   Mat &inter)
 {
+
+//	int numMul(0), numMulAdd(0), numAdd(0), numMatInv(0);
+
 	Mat sum_v(3, 3, CV_64FC1, double(0));
 	Mat sum_vp(3, 3, CV_64FC1, double(0));
 
@@ -283,18 +330,43 @@ void intersection (const Mat &liste_p1, const Mat &liste_p2, const Mat &liste_p3
 	Mat vp3(3, 1, CV_64FC1);
 
 	v1 = Mat::eye(3, 3, CV_64FC1) - liste_azim1.t() * liste_azim1;
+	numMul += 9;
+	numAdd += 3 * 3;
 	vp1 = v1 * liste_p1.t();
+	numMul += 1;
+	numMulAdd += 2;
 
 	v2 = Mat::eye(3, 3, CV_64FC1) - liste_azim2.t() * liste_azim2;
+	numMul += 9;
+	numAdd += 3 * 3;
 	vp2 = v2 * liste_p2.t();
+	numMul += 1;
+	numMulAdd += 2;
 
 	v3 = Mat::eye(3, 3, CV_64FC1) - liste_azim3.t() * liste_azim3;
+	numMul += 9;
+	numAdd += 3 * 3;
 	vp3 = v3 * liste_p3.t();
+	numMul += 1;
+	numMulAdd += 2;
 
 	sum_v = v1 + v2 + v3;
+	numAdd += 3 * 3 * 2;
 	sum_vp = vp1 + vp2 + vp3;
+	numAdd += 3 * 2;
 
 	inter = (sum_v.inv() * sum_vp).t();
+	numMatInv += 1;
+	numMulAdd += 2 * 3;
+	numMul += 1 * 3;
+
+/*
+	cout << "intersection:" << endl;
+	cout << " #Mul: " << numMul << endl;
+	cout << " #MulAdd: " << numMulAdd << endl;
+	cout << " #Add: " << numAdd << endl;
+	cout << " #MatInv: " << numMatInv << endl;
+*/
 
 }
 
@@ -304,14 +376,20 @@ void estimation_rayons (const vector<Point_t> &p3d_1, const vector<Point_t> &p3d
 						const Mat &sv_t_12, const Mat &sv_t_23, const Mat &sv_t_31,
 						vector<double> &sv_u, vector<double> &sv_v, vector<double> &sv_w)
 {
+//	int numMul(0), numMulAdd(0), numDiv(0), numAdd(0), numSqrt(0);
+
 	int longueur = p3d_1.size();
 
 	Mat c1(1, 3, CV_64FC1, double(0));
 	Mat c2(1, 3, CV_64FC1);
 	Mat c3(1, 3, CV_64FC1);
 
-	c2 = sv_t_12;
+	c2 = c1 + sv_t_12;
+	numAdd += 3;
 	c3 = c2 + (sv_r_12 * sv_t_23.t()).t();
+	numMulAdd += 2 * 3;
+	numMul += 3;
+	numAdd += 3;
 
 	for (int i=0; i<longueur; ++i) {
 		sv_u[i]=0;
@@ -337,8 +415,11 @@ void estimation_rayons (const vector<Point_t> &p3d_1, const vector<Point_t> &p3d
 		azim3.at<double>(0, 1) = p3d_3[i].y;
 		azim3.at<double>(0, 2) = p3d_3[i].z;
 
+		azim2 = azim2 * sv_r_23;
 		azim2 = azim2 * sv_r_31;
 		azim3 = azim3 * sv_r_31;
+		numMulAdd += 2 * 3 * 3;
+		numMul += 3 * 3;
 
 		Mat inter(1, 3, CV_64FC1);
 
@@ -349,13 +430,48 @@ void estimation_rayons (const vector<Point_t> &p3d_1, const vector<Point_t> &p3d
 		Mat inter3(1, 3, CV_64FC1);
 
 		inter1 = c1 + (((inter - c1) * azim1.t()) / (azim1.dot(azim1))) * azim1;
+		numMulAdd += (2 + 2);
+		numAdd += (3 + 3);
+		numDiv += 1;
+		numMul += 3 + 1 + 1;
 		inter2 = c2 + (((inter - c2) * azim2.t()) / (azim2.dot(azim2))) * azim2;
+		numMulAdd += (2 + 2);
+		numAdd += (3 + 3);
+		numDiv += 1;
+		numMul += 3 + 1 + 1;
 		inter3 = c3 + (((inter - c3) * azim3.t()) / (azim3.dot(azim3))) * azim3;
+		numMulAdd += (2 + 2);
+		numAdd += (3 + 3);
+		numDiv += 1;
+		numMul += 3 + 1 + 1;
+
 
 		sv_u[i] = norm(inter1 - c1);
+		numAdd += 3;
+		numMulAdd += 2;
+		numMul += 1;
+		numSqrt += 1;
 		sv_v[i] = norm(inter2 - c2);
+		numAdd += 3;
+		numMulAdd += 2;
+		numMul += 1;
+		numSqrt += 1;
 		sv_w[i] = norm(inter3 - c3);
+		numAdd += 3;
+		numMulAdd += 2;
+		numMul += 1;
+		numSqrt += 1;
 	}
+
+/*
+	cout << "estimation_rayons:" << endl;
+	cout << " #Mul: " << numMul << endl;
+	cout << " #MulAdd: " << numMulAdd << endl;
+	cout << " #Div: " << numDiv << endl;
+	cout << " #Add: " << numAdd << endl;
+	cout << " #Sqrt: " << numSqrt << endl;
+*/
+
 }
 
 void pose_scene (const vector<Point_t> &p3d_1, const vector<Point_t> &p3d_2, const vector<Point_t> &p3d_3,
@@ -363,6 +479,8 @@ void pose_scene (const vector<Point_t> &p3d_1, const vector<Point_t> &p3d_2, con
 				 const Mat &sv_t_12, const Mat &sv_t_23, const Mat &sv_t_31,
 				 vector<Point_t> &sv_scene)
 {
+//	int numMul(0), numMulAdd(0), numAdd(0);
+
 	int longueur = p3d_1.size();
 
 	Mat c1(1, 3, CV_64FC1, double(0));
@@ -370,7 +488,11 @@ void pose_scene (const vector<Point_t> &p3d_1, const vector<Point_t> &p3d_2, con
 	Mat c3(1, 3, CV_64FC1);
 
 	c2 = c1 + sv_t_12;
+	numAdd += 3;
 	c3 = c2 + (sv_r_12 * sv_t_23.t()).t();
+	numMulAdd += 2 * 3;
+	numMul += 1 * 3;
+	numAdd += 3;
 
 	for (int i=0; i<longueur; ++i) {
 		sv_scene[i].x=0;
@@ -396,8 +518,15 @@ void pose_scene (const vector<Point_t> &p3d_1, const vector<Point_t> &p3d_2, con
 		azim3.at<double>(0, 1) = p3d_3[i].y;
 		azim3.at<double>(0, 2) = p3d_3[i].z;
 
+		azim2 = azim2 * sv_r_23;
+		numMulAdd += 2 * 3;
+		numMul += 1 * 3;
 		azim2 = azim2 * sv_r_31;
+		numMulAdd += 2 * 3;
+		numMul += 1 * 3;
 		azim3 = azim3 * sv_r_31;
+		numMulAdd += 2 * 3;
+		numMul += 1 * 3;
 
 		Mat inter(1, 3, CV_64FC1);
 
@@ -408,6 +537,13 @@ void pose_scene (const vector<Point_t> &p3d_1, const vector<Point_t> &p3d_2, con
 		sv_scene[i].z = inter.at<double>(0, 2);
 
 	}
+/*
+	cout << "pose_scene:" << endl;
+	cout << " #Mul:" << numMul << endl;
+	cout << " #MulAdd: " << numMulAdd << endl;
+	cout << " #Add: " << numAdd << endl;
+*/
+
 }
 
 int main() {
@@ -460,6 +596,15 @@ int main() {
 	}
 
 	cout << "Finished computing." << endl;
+
+	cout << " Length: " << length << endl;
+	cout << " #Add: " << numAdd << endl;
+	cout << " #Mul/MulAdd: " << numMul + numMulAdd << endl;
+	cout << " #Div: " << numDiv << endl;
+	cout << " #Sqrt: " << numSqrt << endl;
+	cout << " #SVD: " << numSVD << endl;
+	cout << " #Det: " << numDeterm << endl;
+	cout << " #MatInv: " << numMatInv << endl;
 
 	return 0;
 }
