@@ -81,7 +81,7 @@ hold on;
 
 % Check the correspondance of the mesured physical 3D points
 
-y = -6.2;
+y = -6.0;
 
 % Check point on the image;
 for x3d=-16.9:0.5:17.1   
