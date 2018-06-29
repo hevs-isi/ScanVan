@@ -12,7 +12,7 @@ sv_t_23 = sv_t(4:6);
 
 c1 = zeros(1,3);
 c2 = sv_t_12;
-c3 = c2 + (sv_r_12 * sv_t_23')';
+c3 = sv_t_12 + (sv_r_12 * sv_t_23')';
 
 sv_u = zeros(longueur,1);
 sv_v = zeros(longueur,1);

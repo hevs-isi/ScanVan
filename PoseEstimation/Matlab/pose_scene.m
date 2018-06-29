@@ -10,7 +10,7 @@ sv_t_23 = sv_t(4:6);
 
 c1 = zeros(1,3);
 c2 = c1 + sv_t_12;
-c3 = c2 + (sv_r_12 *sv_t_23')';
+c3 = sv_t_12 + (sv_r_12 *sv_t_23')';
 
 sv_scene = zeros(longueur,3);
 
