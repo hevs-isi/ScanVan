@@ -35,7 +35,7 @@ public:
 	size_t size() const { return points.size();	}
 	point_t<T> mean() const;
 	point_t<T> operator[](const int i);
-	VecPoints<T> & operator=(VecPoints<T> &a);
+	VecPoints<T> & operator=(const VecPoints<T> &a);
 	VecPoints<T> & operator*(const std::vector<T> &p);
 	VecPoints<T> & operator-(const point_t<T> &p);
 	friend std::ostream & operator <<(std::ostream & out, const VecPoints<T> &a) {
@@ -158,7 +158,7 @@ inline point_t<T> VecPoints<T>::operator [](const int i){
 }
 
 template <typename T>
-VecPoints<T> & VecPoints<T>::operator=(VecPoints<T> &a) {
+VecPoints<T> & VecPoints<T>::operator=(const VecPoints<T> &a) {
 	if (this != &a){
 		this->points=a.points;
 	}

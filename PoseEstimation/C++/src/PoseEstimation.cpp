@@ -432,6 +432,65 @@ std::string GetCurrentWorkingDir( void ) {
   return current_working_dir;
 }
 
+template <typename T>
+void estimation_rayons (const VecPoints<T> &p3d_1, const VecPoints<T> &p3d_2, const VecPoints<T> &p3d_3,
+						const Mat33<T> &sv_r_12, const Mat33<T> &sv_r_23, const Mat33<T> &sv_r_31,
+						const point_t<T> &sv_t_12, const point_t<T> &sv_t_23, const point_t<T> &sv_t_31,
+						vector<T> &sv_u, vector<T> &sv_v, vector<T> &sv_w)
+{
+	VecPoints<T> p3d_1_exp{p3d_1};
+	VecPoints<T> p3d_2_exp{p3d_2};
+	VecPoints<T> p3d_3_exp{p3d_3};
+
+	p3d_1_exp * sv_u;
+	p3d_2_exp * sv_v;
+	p3d_3_exp * sv_w;
+
+	point_t<T> sv_cent_1{p3d_1_exp.mean()};
+	point_t<T> sv_cent_2{p3d_2_exp.mean()};
+	point_t<T> sv_cent_3{p3d_3_exp.mean()};
+
+	VecPoints<T> sv_diff_1{p3d_1_exp};
+	VecPoints<T> sv_diff_2{p3d_2_exp};
+	VecPoints<T> sv_diff_3{p3d_3_exp};
+
+	sv_diff_1 - sv_cent_1;
+	sv_diff_2 - sv_cent_2;
+	sv_diff_3 - sv_cent_3;
+
+	Mat33<T> sv_corr_12{};
+	Mat33<T> sv_corr_23{};
+	Mat33<T> sv_corr_31{};
+
+	sv_corr_12.mul_vecPt_vecP(sv_diff_1, sv_diff_2);
+	sv_corr_23.mul_vecPt_vecP(sv_diff_2, sv_diff_3);
+	sv_corr_31.mul_vecPt_vecP(sv_diff_3, sv_diff_1);
+
+	Mat33<T> svd_Ut_12{};
+	Mat33<T> svd_Ut_23{};
+	Mat33<T> svd_Ut_31{};
+
+	Mat33<T> svd_V_12{};
+	Mat33<T> svd_V_23{};
+	Mat33<T> svd_V_31{};
+
+	sv_corr_12.svd(svd_Ut_12, svd_V_12);
+	sv_corr_23.svd(svd_Ut_23, svd_V_23);
+	sv_corr_31.svd(svd_Ut_31, svd_V_31);
+
+	sv_r_12.svd_rotation(svd_V_12, svd_Ut_12);
+	sv_r_23.svd_rotation(svd_V_23, svd_Ut_23);
+	sv_r_31.svd_rotation(svd_V_31, svd_Ut_31);
+
+	point_t<T> sv_sub_12{};
+	point_t<T> sv_sub_23{};
+	point_t<T> sv_sub_31{};
+
+	// to continue
+
+
+
+}
 
 int main() {
 
@@ -489,7 +548,7 @@ int main() {
 	std::cout << "p1=(" << p1[0] << ", " << p1[1] << ", " << p1[2] << ")" << std::endl;
 */
 
-	std::vector<double> sv_u (p3d_1.size(), 0);
+	/*std::vector<double> sv_u (p3d_1.size(), 0);
 	sv_u[0]=1;
 
 	for (auto x:sv_u){
@@ -504,37 +563,80 @@ int main() {
 	if (p3d_1.save_vecpoints(path_datab1)) {
 			return 1;
 	}
-
+*/
 	VecPoints<double> v{},w{};
-	point_t<double> p1{1,1,1};
-	point_t<double> p2{2,2,2};
-	point_t<double> p3{3,3,3};
+
+/*
+	point_t<double> p1{1,2,3};
+	point_t<double> p2{4,5,6};
+	point_t<double> p3{7,8,9};
 
 	v.push_back(p1);
 	v.push_back(p2);
 	v.push_back(p3);
 
-	w.push_back(p1);
-	w.push_back(p2);
-	w.push_back(p3);
+	point_t<double> p4{1,0,0};
+	point_t<double> p5{1,0,0};
+	point_t<double> p6{1,0,0};
+
+	w.push_back(p4);
+	w.push_back(p5);
+	w.push_back(p6);
+*/
+
+	v = p3d_1;
+	w = p3d_2;
 
 	std::cout << "v=============================================" << std::endl;
 	std::cout << v;
 	std::cout << "==============================================" << std::endl;
 
 	std::cout << "w=============================================" << std::endl;
-	std::cout << v;
+	std::cout << w;
 	std::cout << "==============================================" << std::endl;
 
-//	p1 = v.mean();
+//	point_t<double> p1 = v.mean();
 //	std::cout << "p1=(" << p1[0] << ", " << p1[1] << ", " << p1[2] << ")" << std::endl;
 //	v = v-p1;
 
-	Mat33<double> m{};
-	m.mul_vecPt_vecP(v,w);
+	Mat33<double> m{1,2,3,4,5,6,7,8,9};
+//	m.mul_vecPt_vecP(v,w);
 	std::cout << "m==============================================" << std::endl;
 	std::cout << m;
 	std::cout << "===============================================" << std::endl;
+
+	Mat33<double> svd_ut{};
+	Mat33<double> svd_v{};
+	m.svd(svd_ut, svd_v);
+
+	std::cout << "ut=============================================" << std::endl;
+	std::cout << svd_ut;
+	std::cout << "===============================================" << std::endl;
+
+	std::cout << "v==============================================" << std::endl;
+	std::cout << svd_v;
+	std::cout << "===============================================" << std::endl;
+
+	Mat33<double> p{1,2,3,4,5,6,7,8,9};
+	Mat33<double> q{2,3,4,5,6,7,8,9,10};
+	Mat33<double> s{};
+
+	s.svd_rotation(p, q);
+
+	std::cout << "p==============================================" << std::endl;
+	std::cout << p;
+	std::cout << "===============================================" << std::endl;
+
+	std::cout << "q==============================================" << std::endl;
+	std::cout << q;
+	std::cout << "===============================================" << std::endl;
+
+	std::cout << "s==============================================" << std::endl;
+	std::cout << s;
+	std::cout << "===============================================" << std::endl;
+
+
+
 
 
 	/*VecPoints<double> p;
