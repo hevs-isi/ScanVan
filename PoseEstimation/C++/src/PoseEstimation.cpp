@@ -7,6 +7,7 @@
 //============================================================================
 // Modification
 
+#include <stdio.h>
 #include <iostream>
 #include <vector>
 
@@ -14,8 +15,11 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
-
+#include <experimental/filesystem>
+#include "VecPoints.h"
+#include "Mat33.h"
 #include <limits>
+#include <unistd.h>
 
 
 using namespace std;
@@ -91,13 +95,13 @@ int loadVector (string inputFileName, vector<Point_t> &p)
 int loadVectors (vector<Point_t> &p3d_1, vector<Point_t> &p3d_2, vector<Point_t> &p3d_3)
 {
 
-	string inputFileName = "/home/scanvan/dev/ScanVan/PoseEstimation/C++/p3d_1.txt";
+	string inputFileName = "/home/marcelo/dev/ScanVan/PoseEstimation/C++/data/p3d_1.txt";
 	if (loadVector(inputFileName, p3d_1))
 		return 1;
-	inputFileName = "/home/scanvan/dev/ScanVan/PoseEstimation/C++/p3d_2.txt";
+	inputFileName = "/home/marcelo/dev/ScanVan/PoseEstimation/C++/data/p3d_2.txt";
 	if (loadVector(inputFileName, p3d_2))
 		return 1;
-	inputFileName = "/home/scanvan/dev/ScanVan/PoseEstimation/C++/p3d_3.txt";
+	inputFileName = "/home/marcelo/dev/ScanVan/PoseEstimation/C++/data/p3d_3.txt";
 	if (loadVector(inputFileName, p3d_3))
 		return 1;
 
@@ -421,9 +425,127 @@ void pose_scene (const vector<Point_t> &p3d_1, const vector<Point_t> &p3d_2, con
 	}
 }
 
+std::string GetCurrentWorkingDir( void ) {
+  char buff[FILENAME_MAX]{};
+  getcwd( buff, FILENAME_MAX );
+  std::string current_working_dir(buff);
+  return current_working_dir;
+}
+
+
 int main() {
 
-	int iterations = 50;
+	// set path to input/output data
+	string path2data = GetCurrentWorkingDir() + "/data/";
+	string path_data1 = path2data + "p3d_1.txt";
+	string path_data2 = path2data + "p3d_2.txt";
+	string path_data3 = path2data + "p3d_3.txt";
+
+	VecPoints<double> p3d_1 { };
+	// Load data from file
+	if (p3d_1.load_vecpoints(path_data1)) {
+		// Error opening the file
+		return 1;
+	}
+	std::cout << p3d_1;
+	std::cout << "==============================================" << std::endl;
+
+	VecPoints<double> p3d_2 { };
+	// Load data from file
+	if (p3d_2.load_vecpoints(path_data2)) {
+		// Error opening the file
+		return 1;
+	}
+	std::cout << p3d_2;
+	std::cout << "==============================================" << std::endl;
+
+	VecPoints<double> p3d_3 { };
+	// Load data from file
+	if (p3d_3.load_vecpoints(path_data3)) {
+		// Error opening the file
+		return 1;
+	}
+	std::cout << p3d_3;
+	std::cout << "==============================================" << std::endl;
+
+	string path_datab1 = path2data + "p3d_1b.txt";
+	string path_datab2 = path2data + "p3d_2b.txt";
+	string path_datab3 = path2data + "p3d_3b.txt";
+
+	if (p3d_1.save_vecpoints(path_datab1)) {
+		return 1;
+	}
+
+	if (p3d_1.save_vecpoints(path_datab2)) {
+		return 1;
+	};
+	if (p3d_3.save_vecpoints(path_datab3)) {
+		return 1;
+	}
+
+/*
+	point_t<double> p1{vec1[0]};
+
+	std::cout << "p1=(" << p1[0] << ", " << p1[1] << ", " << p1[2] << ")" << std::endl;
+*/
+
+	std::vector<double> sv_u (p3d_1.size(), 0);
+	sv_u[0]=1;
+
+	for (auto x:sv_u){
+		std::cout << x << std::endl;
+	}
+
+	p3d_1=p3d_1*sv_u;
+
+	std::cout << p3d_1;
+	std::cout << "==============================================" << std::endl;
+
+	if (p3d_1.save_vecpoints(path_datab1)) {
+			return 1;
+	}
+
+	VecPoints<double> v{},w{};
+	point_t<double> p1{1,1,1};
+	point_t<double> p2{2,2,2};
+	point_t<double> p3{3,3,3};
+
+	v.push_back(p1);
+	v.push_back(p2);
+	v.push_back(p3);
+
+	w.push_back(p1);
+	w.push_back(p2);
+	w.push_back(p3);
+
+	std::cout << "v=============================================" << std::endl;
+	std::cout << v;
+	std::cout << "==============================================" << std::endl;
+
+	std::cout << "w=============================================" << std::endl;
+	std::cout << v;
+	std::cout << "==============================================" << std::endl;
+
+//	p1 = v.mean();
+//	std::cout << "p1=(" << p1[0] << ", " << p1[1] << ", " << p1[2] << ")" << std::endl;
+//	v = v-p1;
+
+	Mat33<double> m{};
+	m.mul_vecPt_vecP(v,w);
+	std::cout << "m==============================================" << std::endl;
+	std::cout << m;
+	std::cout << "===============================================" << std::endl;
+
+
+	/*VecPoints<double> p;
+	p=p3d_1;
+
+	if (p.save_vecpoints(path_datab1)) {
+				return 1;
+	}
+*/
+/*
+	int iterations{50};
 
 	vector<Point_t> p3d_1, p3d_2, p3d_3;
 	vector<Point_t> sv_scene;
@@ -465,7 +587,7 @@ int main() {
 
 	pose_scene (p3d_1, p3d_2, p3d_3, sv_r_12, sv_r_23, sv_r_31, sv_t_12, sv_t_23, sv_t_31, sv_scene);
 
-	if (writeVector ("/home/scanvan/dev/ScanVan/PoseEstimation/C++/sv_scene.txt", sv_scene)) {
+	if (writeVector ("/home/marcelo/dev/ScanVan/PoseEstimation/C++/data/sv_scene.txt", sv_scene)) {
 		cerr << "Error writing file" << endl;
 		exit(1);
 	}
@@ -473,6 +595,7 @@ int main() {
 	cout << "Finished computing." << endl;
 
 	cout << " Length: " << length << endl;
+*/
 
 	return 0;
 }
