@@ -1,5 +1,5 @@
-#ifndef SRC_VECPOINTS_H_
-#define SRC_VECPOINTS_H_
+#ifndef SRC_VECPOINTS_HPP_
+#define SRC_VECPOINTS_HPP_
 
 #include <array>
 #include <vector>
@@ -189,4 +189,4 @@ inline VecPoints<T> & VecPoints<T>::operator-(const point_t<T> &p) {
 	return *this;
 }
 
-#endif /* SRC_VECPOINTS_H_ */
+#endif /* SRC_VECPOINTS_HPP_ */

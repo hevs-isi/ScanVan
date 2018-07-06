@@ -15,10 +15,11 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <experimental/filesystem>
-#include "VecPoints.h"
-#include "Mat33.h"
 #include <limits>
 #include <unistd.h>
+#include "Mat33.hpp"
+#include "VecPoints.hpp"
+#include "Points.hpp"
 
 
 using namespace std;
@@ -142,6 +143,7 @@ void svd_rotation (const Mat &v, const Mat &u, Mat &vmu)
 
 }
 
+/*
 void estimation_rot_trans (const vector<Point_t> &p3d_1, const vector<Point_t> &p3d_2, const vector<Point_t> &p3d_3,
 						   const vector<double> &sv_u, const vector<double> &sv_v, const vector<double> sv_w,
 						   Mat &sv_r_12, Mat &sv_r_23, Mat &sv_r_31, Mat &sv_t_12, Mat &sv_t_23, Mat &sv_t_31)
@@ -275,6 +277,7 @@ void estimation_rot_trans (const vector<Point_t> &p3d_1, const vector<Point_t> &
 	sv_t_31 = sv_cent_1v - (sv_r_31 * sv_cent_3v.t()).t();
 
 }
+*/
 
 void intersection (const Mat &liste_p1, const Mat &liste_p2, const Mat &liste_p3,
 				   const Mat &liste_azim1, const Mat &liste_azim2, const Mat &liste_azim3,
@@ -307,7 +310,7 @@ void intersection (const Mat &liste_p1, const Mat &liste_p2, const Mat &liste_p3
 
 }
 
-
+/*
 void estimation_rayons (const vector<Point_t> &p3d_1, const vector<Point_t> &p3d_2, const vector<Point_t> &p3d_3,
 						const Mat &sv_r_12, const Mat &sv_r_23, const Mat &sv_r_31,
 						const Mat &sv_t_12, const Mat &sv_t_23, const Mat &sv_t_31,
@@ -369,6 +372,7 @@ void estimation_rayons (const vector<Point_t> &p3d_1, const vector<Point_t> &p3d
 	}
 
 }
+*/
 
 void pose_scene (const vector<Point_t> &p3d_1, const vector<Point_t> &p3d_2, const vector<Point_t> &p3d_3,
 				 const Mat &sv_r_12, const Mat &sv_r_23, const Mat &sv_r_31,
@@ -432,11 +436,14 @@ std::string GetCurrentWorkingDir( void ) {
 }
 
 template <typename T>
-void estimation_rayons (const VecPoints<T> &p3d_1, const VecPoints<T> &p3d_2, const VecPoints<T> &p3d_3,
-						const vector<T> &sv_u, const vector<T> &sv_v, const vector<T> &sv_w,
-						Mat33<T> &sv_r_12, Mat33<T> &sv_r_23, Mat33<T> &sv_r_31,
-						point_t<T> &sv_t_12, point_t<T> &sv_t_23, point_t<T> &sv_t_31)
+void estimation_rot_trans (const VecPoints<T> &p3d_1, const VecPoints<T> &p3d_2, const VecPoints<T> &p3d_3,
+						   const vector<T> &sv_u, const vector<T> &sv_v, const vector<T> &sv_w,
+						   Mat33<T> &sv_r_12, Mat33<T> &sv_r_23, Mat33<T> &sv_r_31,
+						   point_t<T> &sv_t_12, point_t<T> &sv_t_23, point_t<T> &sv_t_31)
 {
+
+	std::cout << "Called the modified function" << std::endl;
+
 	VecPoints<T> p3d_1_exp{p3d_1};
 	VecPoints<T> p3d_2_exp{p3d_2};
 	VecPoints<T> p3d_3_exp{p3d_3};
@@ -542,10 +549,10 @@ int main() {
 	point_t<double> sv_t_23{};
 	point_t<double> sv_t_31{};
 
-	estimation_rayons (p3d_1, p3d_2, p3d_3,
-					   sv_u, sv_v, sv_w,
-					   sv_r_12, sv_r_23, sv_r_31,
-					   sv_t_12, sv_t_23, sv_t_31);
+	estimation_rot_trans (p3d_1, p3d_2, p3d_3,
+					   	  sv_u, sv_v, sv_w,
+						  sv_r_12, sv_r_23, sv_r_31,
+						  sv_t_12, sv_t_23, sv_t_31);
 
 
 	// sv_r_12
@@ -577,6 +584,13 @@ int main() {
 	std::cout << "sv_t_31===================================" << std::endl;
 	std::cout << sv_t_31[0] << " " << sv_t_31[1] << " " << sv_t_31[2] << std::endl;
 	std::cout << "==========================================" << std::endl;
+
+
+	Points<double> a{1,2,3};
+	Points<double> c;
+	c = std::move(a);
+	std::cout << c.GetValue(0);
+
 
 
 /*

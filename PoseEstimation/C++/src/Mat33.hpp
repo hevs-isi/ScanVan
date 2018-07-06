@@ -1,7 +1,7 @@
-#ifndef SRC_MAT33_H_
-#define SRC_MAT33_H_
+#ifndef SRC_MAT33_HPP_
+#define SRC_MAT33_HPP_
 
-#include "VecPoints.h"
+#include "VecPoints.hpp"
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 
@@ -18,7 +18,7 @@ public:
 	void svd (Mat33<T> &ut, Mat33<T> &v);
 	Mat33<T> & operator=(const Mat33<T> &a);
 	void svd_rotation (Mat33<T> &v, Mat33<T> &u);
-	~Mat33() {};
+	virtual ~Mat33() {};
 	friend std::ostream & operator <<(std::ostream & out, const Mat33<T> &a) {
 		out << "[[" << a.mat[0][0] << " " << a.mat[0][1] << " " << a.mat[0][2] << "]" << std::endl;
 		out << " [" << a.mat[1][0] << " " << a.mat[1][1] << " " << a.mat[1][2] << "]" << std::endl;
@@ -161,4 +161,4 @@ void Mat33<T>::mul_P_2_P (point_t<T> &b, point_t<T> &to_c){
 }
 
 
-#endif /* SRC_MAT33_H_ */
+#endif /* SRC_MAT33_HPP_ */
