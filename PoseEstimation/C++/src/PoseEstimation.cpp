@@ -3,9 +3,8 @@
 // Author      : Marcelo Kaihara
 // Version     :
 // Copyright   : 
-// Description : Hello World in C++, Ansi-style
+// Description : Pose Estimation algorithm implemented in C++
 //============================================================================
-// Modification
 
 #include <stdio.h>
 #include <iostream>
@@ -434,9 +433,9 @@ std::string GetCurrentWorkingDir( void ) {
 
 template <typename T>
 void estimation_rayons (const VecPoints<T> &p3d_1, const VecPoints<T> &p3d_2, const VecPoints<T> &p3d_3,
-						const Mat33<T> &sv_r_12, const Mat33<T> &sv_r_23, const Mat33<T> &sv_r_31,
-						const point_t<T> &sv_t_12, const point_t<T> &sv_t_23, const point_t<T> &sv_t_31,
-						vector<T> &sv_u, vector<T> &sv_v, vector<T> &sv_w)
+						const vector<T> &sv_u, const vector<T> &sv_v, const vector<T> &sv_w,
+						Mat33<T> &sv_r_12, Mat33<T> &sv_r_23, Mat33<T> &sv_r_31,
+						point_t<T> &sv_t_12, point_t<T> &sv_t_23, point_t<T> &sv_t_31)
 {
 	VecPoints<T> p3d_1_exp{p3d_1};
 	VecPoints<T> p3d_2_exp{p3d_2};
@@ -486,9 +485,21 @@ void estimation_rayons (const VecPoints<T> &p3d_1, const VecPoints<T> &p3d_2, co
 	point_t<T> sv_sub_23{};
 	point_t<T> sv_sub_31{};
 
-	// to continue
+	sv_r_12.mul_P_2_P(sv_cent_1, sv_sub_12);
+	sv_r_23.mul_P_2_P(sv_cent_2, sv_sub_23);
+	sv_r_31.mul_P_2_P(sv_cent_3, sv_sub_31);
 
+	sv_t_12[0] = sv_cent_2[0] - sv_sub_12[0];
+	sv_t_12[1] = sv_cent_2[1] - sv_sub_12[1];
+	sv_t_12[2] = sv_cent_2[2] - sv_sub_12[2];
 
+	sv_t_23[0] = sv_cent_3[0] - sv_sub_23[0];
+	sv_t_23[1] = sv_cent_3[1] - sv_sub_23[1];
+	sv_t_23[2] = sv_cent_3[2] - sv_sub_23[2];
+
+	sv_t_31[0] = sv_cent_1[0] - sv_sub_31[0];
+	sv_t_31[1] = sv_cent_1[1] - sv_sub_31[1];
+	sv_t_31[2] = sv_cent_1[2] - sv_sub_31[2];
 
 }
 
@@ -501,32 +512,75 @@ int main() {
 	string path_data3 = path2data + "p3d_3.txt";
 
 	VecPoints<double> p3d_1 { };
+	VecPoints<double> p3d_2 { };
+	VecPoints<double> p3d_3 { };
+
 	// Load data from file
 	if (p3d_1.load_vecpoints(path_data1)) {
 		// Error opening the file
 		return 1;
 	}
-	std::cout << p3d_1;
-	std::cout << "==============================================" << std::endl;
-
-	VecPoints<double> p3d_2 { };
-	// Load data from file
 	if (p3d_2.load_vecpoints(path_data2)) {
 		// Error opening the file
 		return 1;
 	}
-	std::cout << p3d_2;
-	std::cout << "==============================================" << std::endl;
-
-	VecPoints<double> p3d_3 { };
-	// Load data from file
 	if (p3d_3.load_vecpoints(path_data3)) {
 		// Error opening the file
 		return 1;
 	}
-	std::cout << p3d_3;
-	std::cout << "==============================================" << std::endl;
 
+	size_t length = p3d_1.size();
+	vector<double> sv_u (length, 1);
+	vector<double> sv_v (length, 1);
+	vector<double> sv_w (length, 1);
+
+	Mat33<double> sv_r_12{};
+	Mat33<double> sv_r_23{};
+	Mat33<double> sv_r_31{};
+
+	point_t<double> sv_t_12{};
+	point_t<double> sv_t_23{};
+	point_t<double> sv_t_31{};
+
+	estimation_rayons (p3d_1, p3d_2, p3d_3,
+					   sv_u, sv_v, sv_w,
+					   sv_r_12, sv_r_23, sv_r_31,
+					   sv_t_12, sv_t_23, sv_t_31);
+
+
+	// sv_r_12
+	std::cout << "sv_r_12===================================" << std::endl;
+	std::cout << sv_r_12;
+	std::cout << "==========================================" << std::endl;
+
+	// sv_r_23
+	std::cout << "sv_r_23===================================" << std::endl;
+	std::cout << sv_r_23;
+	std::cout << "==========================================" << std::endl;
+
+	// sv_r_31
+	std::cout << "sv_r_31===================================" << std::endl;
+	std::cout << sv_r_31;
+	std::cout << "==========================================" << std::endl;
+
+	// sv_t_12
+	std::cout << "sv_t_12===================================" << std::endl;
+	std::cout << sv_t_12[0] << " " << sv_t_12[1] << " " << sv_t_12[2] << std::endl;
+	std::cout << "==========================================" << std::endl;
+
+	// sv_t_23
+	std::cout << "sv_t_23===================================" << std::endl;
+	std::cout << sv_t_23[0] << " " << sv_t_23[1] << " " << sv_t_23[2] << std::endl;
+	std::cout << "==========================================" << std::endl;
+
+	// sv_t_31
+	std::cout << "sv_t_31===================================" << std::endl;
+	std::cout << sv_t_31[0] << " " << sv_t_31[1] << " " << sv_t_31[2] << std::endl;
+	std::cout << "==========================================" << std::endl;
+
+
+/*
+	// Save data
 	string path_datab1 = path2data + "p3d_1b.txt";
 	string path_datab2 = path2data + "p3d_2b.txt";
 	string path_datab3 = path2data + "p3d_3b.txt";
@@ -541,111 +595,10 @@ int main() {
 	if (p3d_3.save_vecpoints(path_datab3)) {
 		return 1;
 	}
-
-/*
-	point_t<double> p1{vec1[0]};
-
-	std::cout << "p1=(" << p1[0] << ", " << p1[1] << ", " << p1[2] << ")" << std::endl;
 */
 
-	/*std::vector<double> sv_u (p3d_1.size(), 0);
-	sv_u[0]=1;
-
-	for (auto x:sv_u){
-		std::cout << x << std::endl;
-	}
-
-	p3d_1=p3d_1*sv_u;
-
-	std::cout << p3d_1;
-	std::cout << "==============================================" << std::endl;
-
-	if (p3d_1.save_vecpoints(path_datab1)) {
-			return 1;
-	}
-*/
-	VecPoints<double> v{},w{};
-
-/*
-	point_t<double> p1{1,2,3};
-	point_t<double> p2{4,5,6};
-	point_t<double> p3{7,8,9};
-
-	v.push_back(p1);
-	v.push_back(p2);
-	v.push_back(p3);
-
-	point_t<double> p4{1,0,0};
-	point_t<double> p5{1,0,0};
-	point_t<double> p6{1,0,0};
-
-	w.push_back(p4);
-	w.push_back(p5);
-	w.push_back(p6);
-*/
-
-	v = p3d_1;
-	w = p3d_2;
-
-	std::cout << "v=============================================" << std::endl;
-	std::cout << v;
-	std::cout << "==============================================" << std::endl;
-
-	std::cout << "w=============================================" << std::endl;
-	std::cout << w;
-	std::cout << "==============================================" << std::endl;
-
-//	point_t<double> p1 = v.mean();
-//	std::cout << "p1=(" << p1[0] << ", " << p1[1] << ", " << p1[2] << ")" << std::endl;
-//	v = v-p1;
-
-	Mat33<double> m{1,2,3,4,5,6,7,8,9};
-//	m.mul_vecPt_vecP(v,w);
-	std::cout << "m==============================================" << std::endl;
-	std::cout << m;
-	std::cout << "===============================================" << std::endl;
-
-	Mat33<double> svd_ut{};
-	Mat33<double> svd_v{};
-	m.svd(svd_ut, svd_v);
-
-	std::cout << "ut=============================================" << std::endl;
-	std::cout << svd_ut;
-	std::cout << "===============================================" << std::endl;
-
-	std::cout << "v==============================================" << std::endl;
-	std::cout << svd_v;
-	std::cout << "===============================================" << std::endl;
-
-	Mat33<double> p{1,2,3,4,5,6,7,8,9};
-	Mat33<double> q{2,3,4,5,6,7,8,9,10};
-	Mat33<double> s{};
-
-	s.svd_rotation(p, q);
-
-	std::cout << "p==============================================" << std::endl;
-	std::cout << p;
-	std::cout << "===============================================" << std::endl;
-
-	std::cout << "q==============================================" << std::endl;
-	std::cout << q;
-	std::cout << "===============================================" << std::endl;
-
-	std::cout << "s==============================================" << std::endl;
-	std::cout << s;
-	std::cout << "===============================================" << std::endl;
 
 
-
-
-
-	/*VecPoints<double> p;
-	p=p3d_1;
-
-	if (p.save_vecpoints(path_datab1)) {
-				return 1;
-	}
-*/
 /*
 	int iterations{50};
 

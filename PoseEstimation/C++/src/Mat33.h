@@ -154,10 +154,10 @@ void Mat33<T>::svd_rotation (Mat33<T> &v, Mat33<T> &u){
 }
 
 template <typename T>
-void Mat33<T>::mul_P_2_P (point_t<T> &b, point_t<T> &c){
-	c[0] = mat[0][0] * b[0] + mat[0][1] * b[1] + mat[0][2] * b[2];
-	c[1] = mat[1][0] * b[0] + mat[1][1] * b[1] + mat[1][2] * b[2];
-	c[2] = mat[2][0] * b[0] + mat[2][1] * b[1] + mat[2][2] * b[2];
+void Mat33<T>::mul_P_2_P (point_t<T> &b, point_t<T> &to_c){
+	to_c[0] = mat[0][0] * b[0] + mat[0][1] * b[1] + mat[0][2] * b[2];
+	to_c[1] = mat[1][0] * b[0] + mat[1][1] * b[1] + mat[1][2] * b[2];
+	to_c[2] = mat[2][0] * b[0] + mat[2][1] * b[1] + mat[2][2] * b[2];
 }
 
 
