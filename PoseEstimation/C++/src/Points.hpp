@@ -2,6 +2,7 @@
 #define SRC_POINTS_HPP_
 
 #include <array>
+#include "Mat_33.hpp"
 
 template <typename T>
 class Points {
@@ -19,6 +20,7 @@ public:
 	Points<T> operator-(const Points<T> &a) const;
 	Points<T> & operator=(const Points<T> &a);
 	Points<T> & operator=(Points<T> &&a);
+	T operator[](const int i) const;
 	friend std::ostream & operator <<(std::ostream & out, const Points<T> &a) {
 		out << "(" << a.m_pA->at(0) << ", " << a.m_pA->at(1) << ", " << a.m_pA->at(2) << ")" << std::endl;
 		return out;
@@ -97,6 +99,12 @@ Points<T> Points<T>::operator-(const Points<T> &a) const{
 	Points<T> temp{m_pA->at(0) - a.m_pA->at(0), m_pA->at(1) - a.m_pA->at(1), m_pA->at(2) - a.m_pA->at(2)};
 	return temp;
 }
+
+template <typename T>
+inline T Points<T>::operator[](const int i) const{
+	return m_pA->at(i);
+}
+
 
 
 #endif /* SRC_POINTS_HPP_ */

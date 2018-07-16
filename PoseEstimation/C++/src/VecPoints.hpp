@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <fstream>
 #include <limits>
+#include "Mat_33.hpp"
 
 template <typename T>
 using point_t = std::array<T, 3>;
@@ -36,6 +37,7 @@ public:
 	point_t<T> mean() const;
 	point_t<T> operator[](const int i);
 	VecPoints<T> & operator=(const VecPoints<T> &a);
+	Mat_33<T> operator*(const VecPoints<T> &b) const;
 	VecPoints<T> & operator*(const std::vector<T> &p);
 	VecPoints<T> & operator-(const point_t<T> &p);
 	friend std::ostream & operator <<(std::ostream & out, const VecPoints<T> &a) {
@@ -177,6 +179,29 @@ inline VecPoints<T> & VecPoints<T>::operator*(const std::vector<T> &p) {
 		x[2] *= *itr++;
 	}
 	return *this;
+}
+
+template<typename T>
+inline Mat_33<T> VecPoints<T>::operator*(const VecPoints<T> &b) const {
+	if (this->size() != b.size()) {
+		throw std::runtime_error("The size of the vector of points transposed does not match to the size of the vector of points.");
+	}
+	T a00 { 0 }, a01 { 0 }, a02 { 0 }, a10 { 0 }, a11 { 0 }, a12 { 0 }, a20 { 0 }, a21 { 0 }, a22 { 0 };
+	for (size_t i { 0 }; i < this->size(); ++i) {
+		point_t<T> x { points[i] };
+		point_t<T> y { b.points[i] };
+		a00 += x[0] * y[0];
+		a01 += x[0] * y[1];
+		a02 += x[0] * y[2];
+		a10 += x[1] * y[0];
+		a11 += x[1] * y[1];
+		a12 += x[1] * y[2];
+		a20 += x[2] * y[0];
+		a21 += x[2] * y[1];
+		a22 += x[2] * y[2];
+	}
+	Mat_33<T> temp {a00, a01, a02, a10, a11, a12, a20, a21, a22};
+	return temp;
 }
 
 template <typename T>

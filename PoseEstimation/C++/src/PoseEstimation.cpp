@@ -20,6 +20,7 @@
 #include "Mat33.hpp"
 #include "VecPoints.hpp"
 #include "Points.hpp"
+#include "Mat_33.hpp"
 
 
 using namespace std;
@@ -587,9 +588,18 @@ int main() {
 
 
 	Points<double> a{1,2,3};
-	Points<double> c;
-	c = std::move(a);
-	std::cout << c.GetValue(0);
+
+	Mat_33<double> d{1,2,3,4,5,6,7,8,9};
+	Points<double> result{};
+	result = d * a;
+
+	std::cout << result << std::endl;
+	std::cout << a[0] << std::endl;
+	std::cout << a[1] << std::endl;
+	std::cout << a[2] << std::endl;
+
+
+
 
 
 
