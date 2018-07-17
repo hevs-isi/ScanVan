@@ -13,6 +13,8 @@
 template <typename T>
 using point_t = std::array<T, 3>;
 
+#ifndef TO_STRING_WITH_PRECISION
+#define TO_STRING_WITH_PRECISION
 template <typename T>
 std::string to_string_with_precision(const T a_value, const int n = 6)
 {
@@ -20,6 +22,7 @@ std::string to_string_with_precision(const T a_value, const int n = 6)
     out << std::setprecision(n) << a_value;
     return out.str();
 }
+#endif /* TO_STRING_WITH_PRECISION */
 
 template <typename T>
 class VecPoints {

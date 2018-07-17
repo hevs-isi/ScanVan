@@ -21,6 +21,7 @@
 #include "VecPoints.hpp"
 #include "Points.hpp"
 #include "Mat_33.hpp"
+#include "Vec_Points.hpp"
 
 
 using namespace std;
@@ -519,9 +520,9 @@ int main() {
 	string path_data2 = path2data + "p3d_2.txt";
 	string path_data3 = path2data + "p3d_3.txt";
 
-	VecPoints<double> p3d_1 { };
-	VecPoints<double> p3d_2 { };
-	VecPoints<double> p3d_3 { };
+	Vec_Points<double> p3d_1 { };
+	Vec_Points<double> p3d_2 { };
+	Vec_Points<double> p3d_3 { };
 
 	// Load data from file
 	if (p3d_1.load_vecpoints(path_data1)) {
@@ -537,7 +538,80 @@ int main() {
 		return 1;
 	}
 
-	size_t length = p3d_1.size();
+	string path_out_data1 = path2data + "p3d_1b.txt";
+	string path_out_data2 = path2data + "p3d_2b.txt";
+	string path_out_data3 = path2data + "p3d_3b.txt";
+
+
+	std::vector<double> s(p3d_1.size(),2);
+	Vec_Points<double> v{};
+	v=p3d_1*s;
+
+
+/*
+	Mat_33<double> m{p3d_1*p3d_2};
+
+	std::cout << m << std::endl;
+*/
+
+	/*// Load data from file
+	if (p3d_1.save_vecpoints(path_out_data1)) {
+		// Error opening the file
+		return 1;
+	}
+	if (p3d_2.save_vecpoints(path_out_data2)) {
+		// Error opening the file
+		return 1;
+	}
+	if (p3d_3.save_vecpoints(path_out_data3)) {
+		// Error opening the file
+		return 1;
+	}
+*/
+
+
+	std::cout << "v=========================================" << std::endl;
+	std::cout << v;
+	std::cout << "==========================================" << std::endl;
+
+
+	Vec_Points<double> v2{};
+
+	Points<double> p1 {1,1,1};
+	v2 = p3d_1 - p1;
+
+/*
+	Points<double> p1{};
+	p1 = p3d_1.mean();
+	std::cout << p1 << std::endl;
+
+	Points<double> p2{p3d_2.mean()};
+	std::cout << p2 << std::endl;
+
+	Points<double> p3{p3d_3.mean()};
+	std::cout << p3 << std::endl;
+
+	p1 = p3d_1[p3d_1.size()-1];
+	std::cout << p1 << std::endl;
+
+	std::cout << p3d_1.size() << std::endl;
+
+	p1 = {1,2,3};
+	p3d_1[p3d_1.size()-1] = p1;
+
+	std::cout << "p3d_1=====================================" << std::endl;
+	std::cout << p3d_1;
+	std::cout << "==========================================" << std::endl;
+
+	p3d_2 = p3d_1;
+
+	std::cout << "p3d_2=====================================" << std::endl;
+	std::cout << p3d_2;
+	std::cout << "a==========================================" << std::endl;
+*/
+
+
+	/*size_t length = p3d_1.size();
 	vector<double> sv_u (length, 1);
 	vector<double> sv_v (length, 1);
 	vector<double> sv_w (length, 1);
@@ -594,24 +668,31 @@ int main() {
 	result = d * a;
 
 	std::cout << result << std::endl;
-	std::cout << a[0] << std::endl;
-	std::cout << a[1] << std::endl;
-	std::cout << a[2] << std::endl;
+
+	Vec_Points<double> t{};
+	t.push_back(11,22,33);
+	t.push_back(1,2,3);
+	t.push_back(4,5,6);
+	t.pop_back();
+	std::cout << t << std::endl;
+*/
 
 
 
 
-
-
-/*
 	// Save data
 	string path_datab1 = path2data + "p3d_1b.txt";
+/*
 	string path_datab2 = path2data + "p3d_2b.txt";
 	string path_datab3 = path2data + "p3d_3b.txt";
+*/
 
-	if (p3d_1.save_vecpoints(path_datab1)) {
+
+	if (v2.save_vecpoints(path_datab1)) {
 		return 1;
 	}
+
+/*
 
 	if (p3d_1.save_vecpoints(path_datab2)) {
 		return 1;
@@ -620,6 +701,7 @@ int main() {
 		return 1;
 	}
 */
+
 
 
 

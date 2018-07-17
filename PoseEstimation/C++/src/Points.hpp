@@ -14,13 +14,14 @@ public:
 	Points (const Points &obj);
 	Points (Points &&obj);
 	void SetValue (T x, T y, T z);
-	T GetValue (size_t pos);
+	T GetValue (size_t pos) const;
 	virtual ~Points();
 	Points<T> operator+(const Points<T> &a) const;
 	Points<T> operator-(const Points<T> &a) const;
 	Points<T> & operator=(const Points<T> &a);
 	Points<T> & operator=(Points<T> &&a);
-	T operator[](const int i) const;
+	const T & operator[](const size_t i) const;
+	T & operator[](const size_t i);
 	friend std::ostream & operator <<(std::ostream & out, const Points<T> &a) {
 		out << "(" << a.m_pA->at(0) << ", " << a.m_pA->at(1) << ", " << a.m_pA->at(2) << ")" << std::endl;
 		return out;
@@ -56,7 +57,7 @@ void Points<T>::SetValue (T x, T y, T z) {
 }
 
 template <typename T>
-T Points<T>::GetValue (size_t pos){
+T Points<T>::GetValue (size_t pos) const {
 	if (pos>2) {
 		throw std::runtime_error("Point coordinate must be between 0 and 2.");
 	}
@@ -101,10 +102,21 @@ Points<T> Points<T>::operator-(const Points<T> &a) const{
 }
 
 template <typename T>
-inline T Points<T>::operator[](const int i) const{
-	return m_pA->at(i);
+inline const T & Points<T>::operator[](const size_t i) const{
+	if (i<3) {
+		return m_pA->at(i);
+	} else {
+		throw std::out_of_range("Invalid access to Point coordinates.");
+	}
 }
 
-
+template <typename T>
+inline T & Points<T>::operator[](const size_t i){
+	if (i<3) {
+		return m_pA->at(i);
+	} else {
+		throw std::out_of_range("Invalid access to Point coordinates.");
+	}
+}
 
 #endif /* SRC_POINTS_HPP_ */
