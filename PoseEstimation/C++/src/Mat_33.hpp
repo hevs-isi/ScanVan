@@ -21,6 +21,7 @@ public:
 	Mat_33<T> & operator=(const Mat_33<T> &a);
 	Mat_33<T> & operator=(Mat_33<T> &&a);
 	Points<T> operator*(const Points<T> &b) const;
+	const T * operator[](const size_t i) const;
 	virtual ~Mat_33();
 	friend std::ostream & operator <<(std::ostream & out, const Mat_33<T> &a) {
 		out << "[[" << a.mat[0][0] << " " << a.mat[0][1] << " " << a.mat[0][2] << "]" << std::endl;
@@ -193,6 +194,15 @@ inline Points<T> Mat_33<T>::operator*(const Points<T> &b) const{
 	T to_c2{mat[2][0] * b[0] + mat[2][1] * b[1] + mat[2][2] * b[2]};
 	Points<T> temp{to_c0, to_c1, to_c2};
 	return temp;
+}
+
+template<typename T>
+inline const T * Mat_33<T>::operator[](const size_t i) const{
+	if (i < 3) {
+		return mat[i];
+	} else {
+		throw std::out_of_range("Invalid access to Mat_33 elements.");
+	}
 }
 
 template<typename T>

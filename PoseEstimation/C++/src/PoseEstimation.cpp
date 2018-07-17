@@ -565,6 +565,11 @@ int main() {
 						  sv_r_12, sv_r_23, sv_r_31,
 						  sv_t_12, sv_t_23, sv_t_31);
 
+	estimation_rayons (p3d_1, p3d_2, p3d_3,
+			           sv_r_12, sv_r_23, sv_r_31,
+					   sv_t_12, sv_t_23, sv_t_31,
+					   sv_u, sv_v, sv_w);
+
 
 /*
 	Mat_33<double> m{p3d_1*p3d_2};

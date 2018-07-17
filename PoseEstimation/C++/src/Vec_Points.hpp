@@ -45,6 +45,7 @@ public:
 	Vec_Points<T> & operator=(const Vec_Points<T> &a);
 	Mat_33<T> operator*(const Vec_Points<T> &b) const;
 	Vec_Points<T> operator*(const std::vector<T> &p) const;
+	Vec_Points<T> operator*(const Mat_33<T> &a) const;
 	Vec_Points<T> operator-(const Points<T> &p);
 
 	friend std::ostream & operator <<(std::ostream & out, const Vec_Points<T> &a) {
@@ -228,7 +229,7 @@ inline Vec_Points<T>  Vec_Points<T>::operator*(const std::vector<T> &p) const{
 	Vec_Points<T> temp{};
 	Points<T> tempP{};
 	auto itr = p.begin();
-	for (auto &x:(*m_pV)){
+	for (const auto &x:(*m_pV)){
 		tempP[0] = x[0] * (*itr);
 		tempP[1] = x[1] * (*itr);
 		tempP[2] = x[2] * (*itr++);
@@ -236,6 +237,23 @@ inline Vec_Points<T>  Vec_Points<T>::operator*(const std::vector<T> &p) const{
 	}
 	return temp;
 }
+
+
+template <typename T>
+inline Vec_Points<T> Vec_Points<T>::operator*(const Mat_33<T> &a) const{
+// Multiplication of Vec_Points with a Mat_33
+	Vec_Points<T> temp{};
+	Points<T> tempP{};
+	for (const auto &x:(*m_pV)){
+		tempP[0] = x[0] * a[0][0] + x[1] * a[1][0] + x[2] * a[2][0];
+		tempP[1] = x[0] * a[0][1] + x[1] * a[1][1] + x[2] * a[2][1];
+		tempP[2] = x[0] * a[0][2] + x[1] * a[1][2] + x[2] * a[2][2];
+		temp.push_back(tempP);
+	}
+	return temp;
+}
+
+
 
 template <typename T>
 inline Vec_Points<T> Vec_Points<T>::operator-(const Points<T> &p) {
