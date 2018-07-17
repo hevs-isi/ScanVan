@@ -188,7 +188,7 @@ inline Points<T> & Vec_Points<T>::operator [](const size_t i){
 }
 
 template <typename T>
-Vec_Points<T> & Vec_Points<T>::operator=(const Vec_Points<T> &a) {
+inline Vec_Points<T> & Vec_Points<T>::operator=(const Vec_Points<T> &a) {
 	if (this != &a){
 		*(this->m_pV)=*(a.m_pV);
 	}
@@ -238,7 +238,7 @@ inline Vec_Points<T>  Vec_Points<T>::operator*(const std::vector<T> &p) const{
 }
 
 template <typename T>
-Vec_Points<T> Vec_Points<T>::operator-(const Points<T> &p) {
+inline Vec_Points<T> Vec_Points<T>::operator-(const Points<T> &p) {
 	Vec_Points<T> temp{};
 	Points<T> temp_P{};
 	for (auto &x : (*m_pV)) {

@@ -71,7 +71,7 @@ Points<T>::~Points() {
 }
 
 template <typename T>
-Points<T> & Points<T>::operator=(const Points<T> &a){
+inline Points<T> & Points<T>::operator=(const Points<T> &a){
 	if (this != &a) {
 		delete m_pA;
 		m_pA = new std::array <T, 3> {{a.m_pA->at(0), a.m_pA->at(1), a.m_pA->at(2)}};
@@ -80,7 +80,7 @@ Points<T> & Points<T>::operator=(const Points<T> &a){
 }
 
 template <typename T>
-Points<T> & Points<T>::operator=(Points<T> &&a){
+inline Points<T> & Points<T>::operator=(Points<T> &&a){
 	if (this != &a) {
 		delete m_pA;
 		m_pA = a.m_pA;
@@ -90,13 +90,13 @@ Points<T> & Points<T>::operator=(Points<T> &&a){
 }
 
 template <typename T>
-Points<T> Points<T>::operator+(const Points<T> &a) const{
+inline Points<T> Points<T>::operator+(const Points<T> &a) const{
 	Points<T> temp{m_pA->at(0) + a.m_pA->at(0), m_pA->at(1) + a.m_pA->at(1), m_pA->at(2) + a.m_pA->at(2)};
 	return temp;
 }
 
 template <typename T>
-Points<T> Points<T>::operator-(const Points<T> &a) const{
+inline Points<T> Points<T>::operator-(const Points<T> &a) const{
 	Points<T> temp{m_pA->at(0) - a.m_pA->at(0), m_pA->at(1) - a.m_pA->at(1), m_pA->at(2) - a.m_pA->at(2)};
 	return temp;
 }

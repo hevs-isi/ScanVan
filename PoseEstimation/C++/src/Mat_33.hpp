@@ -158,7 +158,7 @@ inline void Mat_33<T>::svd_rotation (Mat_33<T> &v, Mat_33<T> &u){
 }
 
 template <typename T>
-Mat_33<T> & Mat_33<T>::operator=(const Mat_33<T> &a) {
+inline Mat_33<T> & Mat_33<T>::operator=(const Mat_33<T> &a) {
 	if (this != &a){
 		this->mat[0][0]=a.mat[0][0];
 		this->mat[0][1]=a.mat[0][1];
@@ -174,7 +174,7 @@ Mat_33<T> & Mat_33<T>::operator=(const Mat_33<T> &a) {
 }
 
 template <typename T>
-Mat_33<T> & Mat_33<T>::operator=(Mat_33<T> &&a) {
+inline Mat_33<T> & Mat_33<T>::operator=(Mat_33<T> &&a) {
 	if (this != &a){
 		delete[] mat[0];
 		delete[] mat[1];
@@ -187,7 +187,7 @@ Mat_33<T> & Mat_33<T>::operator=(Mat_33<T> &&a) {
 }
 
 template<typename T>
-Points<T> Mat_33<T>::operator*(const Points<T> &b) const{
+inline Points<T> Mat_33<T>::operator*(const Points<T> &b) const{
 	T to_c0{mat[0][0] * b[0] + mat[0][1] * b[1] + mat[0][2] * b[2]};
 	T to_c1{mat[1][0] * b[0] + mat[1][1] * b[1] + mat[1][2] * b[2]};
 	T to_c2{mat[2][0] * b[0] + mat[2][1] * b[1] + mat[2][2] * b[2]};

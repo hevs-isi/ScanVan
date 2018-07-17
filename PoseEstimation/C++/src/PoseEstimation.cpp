@@ -22,6 +22,7 @@
 #include "Points.hpp"
 #include "Mat_33.hpp"
 #include "Vec_Points.hpp"
+#include "Estimation.hpp"
 
 
 using namespace std;
@@ -437,6 +438,8 @@ std::string GetCurrentWorkingDir( void ) {
   return current_working_dir;
 }
 
+
+/*
 template <typename T>
 void estimation_rot_trans (const VecPoints<T> &p3d_1, const VecPoints<T> &p3d_2, const VecPoints<T> &p3d_3,
 						   const vector<T> &sv_u, const vector<T> &sv_v, const vector<T> &sv_w,
@@ -511,6 +514,7 @@ void estimation_rot_trans (const VecPoints<T> &p3d_1, const VecPoints<T> &p3d_2,
 	sv_t_31[2] = sv_cent_1[2] - sv_sub_31[2];
 
 }
+*/
 
 int main() {
 
@@ -538,14 +542,28 @@ int main() {
 		return 1;
 	}
 
+/*
 	string path_out_data1 = path2data + "p3d_1b.txt";
 	string path_out_data2 = path2data + "p3d_2b.txt";
 	string path_out_data3 = path2data + "p3d_3b.txt";
+*/
 
+	std::vector<double> sv_u(p3d_1.size(),1);
+	std::vector<double> sv_v(p3d_2.size(),1);
+	std::vector<double> sv_w(p3d_3.size(),1);
 
-	std::vector<double> s(p3d_1.size(),2);
-	Vec_Points<double> v{};
-	v=p3d_1*s;
+	Mat_33<double> sv_r_12{};
+	Mat_33<double> sv_r_23{};
+	Mat_33<double> sv_r_31{};
+
+	Points<double> sv_t_12{};
+	Points<double> sv_t_23{};
+	Points<double> sv_t_31{};
+
+	estimation_rot_trans (p3d_1, p3d_2, p3d_3,
+						  sv_u, sv_v, sv_w,
+						  sv_r_12, sv_r_23, sv_r_31,
+						  sv_t_12, sv_t_23, sv_t_31);
 
 
 /*
@@ -570,7 +588,7 @@ int main() {
 */
 
 
-	std::cout << "v=========================================" << std::endl;
+	/*std::cout << "v=========================================" << std::endl;
 	std::cout << v;
 	std::cout << "==========================================" << std::endl;
 
@@ -579,7 +597,7 @@ int main() {
 
 	Points<double> p1 {1,1,1};
 	v2 = p3d_1 - p1;
-
+*/
 /*
 	Points<double> p1{};
 	p1 = p3d_1.mean();
@@ -679,18 +697,19 @@ int main() {
 
 
 
-
+/*
 	// Save data
 	string path_datab1 = path2data + "p3d_1b.txt";
-/*
 	string path_datab2 = path2data + "p3d_2b.txt";
 	string path_datab3 = path2data + "p3d_3b.txt";
 */
 
 
+/*
 	if (v2.save_vecpoints(path_datab1)) {
 		return 1;
 	}
+*/
 
 /*
 
@@ -701,8 +720,6 @@ int main() {
 		return 1;
 	}
 */
-
-
 
 
 /*
