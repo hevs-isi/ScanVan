@@ -33,6 +33,8 @@ public:
 	Vec_Points();
 	Vec_Points(const Vec_Points<T> &obj);
 	Vec_Points(Vec_Points<T> &&obj);
+	Vec_Points(size_t longueur, Points<T> &p);
+	Vec_Points(size_t longueur);
 	void push_back (const Points<T> &p);
 	void push_back (const T x, const T y, const T z);
 	void pop_back();
@@ -73,6 +75,23 @@ template <typename T>
 Vec_Points<T>::Vec_Points(Vec_Points<T> &&obj){
 	m_pV = obj.m_pV;
 	obj.m_pV = nullptr;
+}
+
+template <typename T>
+Vec_Points<T>::Vec_Points(size_t longueur, Points<T> &p){
+	m_pV = new vecpoint_t<T>{};
+	for (size_t i{0}; i < longueur; ++i) {
+		m_pV->push_back(p);
+	}
+}
+
+template <typename T>
+Vec_Points<T>::Vec_Points(size_t longueur) {
+	m_pV = new vecpoint_t<T>{};
+	Points<T> zeros {0, 0, 0};
+	for (size_t i{0}; i < longueur; ++i) {
+		m_pV->push_back(zeros);
+	}
 }
 
 template <typename T>
@@ -161,8 +180,17 @@ bool Vec_Points<T>::save_vecpoints(std::string path) const {
 template <typename T>
 void Vec_Points<T>::assign (size_t longueur, Points<T> &p) {
 
-	for (size_t i{0}; i< longueur; ++i) {
-		m_pV->push_back(p);
+	if (m_pV->size() < longueur) {
+		for (size_t i{0}; i< m_pV->size(); ++i) {
+			m_pV->at(i) = p;
+		}
+		for (size_t i{m_pV->size()}; i < longueur; ++i){
+			m_pV->push_back(p);
+		}
+	} else {
+		for (size_t i{0}; i< longueur; ++i) {
+			m_pV->at(i) = p;
+		}
 	}
 }
 

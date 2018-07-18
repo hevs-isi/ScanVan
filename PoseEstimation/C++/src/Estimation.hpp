@@ -170,9 +170,37 @@ void pose_scene (const Vec_Points<T> &p3d_1, const Vec_Points<T> &p3d_2, const V
 
 }
 
+template <typename T>
+void pose_estimation (const Vec_Points<T> &p3d_1, const Vec_Points<T> &p3d_2, const Vec_Points<T> &p3d_3,
+				 	  const size_t iterations,
+					  Vec_Points<T> &sv_scene,
+					  Mat_33<T> &sv_r_12, Mat_33<T> &sv_r_23, Mat_33<T> &sv_r_31,
+					  Points<T> &sv_t_12, Points<T> &sv_t_23, Points<T> &sv_t_31) {
 
+	std::vector<T> sv_u(p3d_1.size(),1);
+	std::vector<T> sv_v(p3d_2.size(),1);
+	std::vector<T> sv_w(p3d_3.size(),1);
 
+	Points<T> zero {0, 0, 0};
+	sv_scene.assign(p3d_1.size(), zero);
 
+	for (size_t i{0}; i < iterations; ++i) {
+		estimation_rot_trans (p3d_1, p3d_2, p3d_3,
+							  sv_u, sv_v, sv_w,
+							  sv_r_12, sv_r_23, sv_r_31,
+							  sv_t_12, sv_t_23, sv_t_31);
 
+		estimation_rayons (p3d_1, p3d_2, p3d_3,
+						   sv_r_12, sv_r_23, sv_r_31,
+						   sv_t_12, sv_t_23, sv_t_31,
+						   sv_u, sv_v, sv_w);
+	}
+
+	pose_scene (p3d_1, p3d_2, p3d_3,
+				sv_r_12, sv_r_23, sv_r_31,
+				sv_t_12, sv_t_23, sv_t_31,
+				sv_scene);
+
+}
 
 #endif /* SRC_ESTIMATION_HPP_ */

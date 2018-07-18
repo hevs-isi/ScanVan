@@ -1,10 +1,9 @@
 #ifndef SRC_MAT_33_HPP_
 #define SRC_MAT_33_HPP_
 
-#include "VecPoints.hpp"
-#include "Points.hpp"
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
+#include "Points.hpp"
 
 template <typename T>
 class Mat_33 {
