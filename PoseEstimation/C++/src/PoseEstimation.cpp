@@ -12,6 +12,9 @@
 #include "Points.hpp"
 #include "Vec_Points.hpp"
 #include "Estimation.hpp"
+#include <time.h>
+#include <chrono>
+#include <unistd.h>
 
 std::string GetCurrentWorkingDir( void ) {
   char buff[FILENAME_MAX]{};
@@ -62,11 +65,22 @@ int main() {
 
 	int iterations {50};
 
+	// For timing measurements
+	std::chrono::high_resolution_clock::time_point t1{};
+	std::chrono::high_resolution_clock::time_point t2{};
+
+	t1 = std::chrono::high_resolution_clock::now();
+
 	pose_estimation (p3d_1, p3d_2, p3d_3,
 					 iterations,
 					 sv_scene,
 					 sv_r_12, sv_r_23, sv_r_31,
 					 sv_t_12, sv_t_23, sv_t_31);
+
+	t2 = std::chrono::high_resolution_clock::now();
+
+	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+	std::cout << "execution time: " << duration << " microseconds" << std::endl;
 
 	std::cout << "sv_scene==================================" << std::endl;
 	std::cout << sv_scene;
