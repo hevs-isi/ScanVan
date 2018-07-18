@@ -6,7 +6,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 
-template<typename T>
+template <typename T>
 class Mat_33 {
 private:
 	T **mat;
@@ -34,7 +34,7 @@ public:
 	}
 };
 
-template<typename T>
+template <typename T>
 inline Mat_33<T>::Mat_33(){
 	T *p1 = new T[3]{0, 0, 0};
 	T *p2 = new T[3]{0, 0, 0};
@@ -42,7 +42,7 @@ inline Mat_33<T>::Mat_33(){
 	mat = new T *[3]{p1, p2, p3};
 }
 
-template<typename T>
+template <typename T>
 inline Mat_33<T>::Mat_33(T a00, T a01, T a02, T a10, T a11, T a12, T a20, T a21, T a22){
 	T *p1 = new T[3]{a00, a01, a02};
 	T *p2 = new T[3]{a10, a11, a12};
@@ -50,7 +50,7 @@ inline Mat_33<T>::Mat_33(T a00, T a01, T a02, T a10, T a11, T a12, T a20, T a21,
 	mat = new T *[3]{p1, p2, p3};
 }
 
-template<typename T>
+template <typename T>
 inline Mat_33<T>::Mat_33(std::initializer_list<T> a0, std::initializer_list<T> a1, std::initializer_list<T> a2){
 	T *p1 = new T[3]{0, 0, 0};
 	T *p2 = new T[3]{0, 0, 0};
@@ -70,7 +70,7 @@ inline Mat_33<T>::Mat_33(std::initializer_list<T> a0, std::initializer_list<T> a
 	}
 }
 
-template<typename T>
+template <typename T>
 inline Mat_33<T>::Mat_33(const Points<T> &c1, const Points<T> &c2, const Points<T> &c3) {
 	T *p1 = new T[3]{c1[0], c1[1], c1[2]};
 	T *p2 = new T[3]{c2[0], c2[1], c2[2]};
@@ -78,7 +78,7 @@ inline Mat_33<T>::Mat_33(const Points<T> &c1, const Points<T> &c2, const Points<
 	mat = new T *[3]{p1, p2, p3};
 }
 
-template<typename T>
+template <typename T>
 inline Mat_33<T>::Mat_33(const Mat_33<T> &obj){
 	T *p1 = new T[3]{obj.mat[0][0], obj.mat[0][1], obj.mat[0][2]};
 	T *p2 = new T[3]{obj.mat[1][0], obj.mat[1][1], obj.mat[1][2]};
@@ -86,7 +86,7 @@ inline Mat_33<T>::Mat_33(const Mat_33<T> &obj){
 	mat = new T *[3]{p1, p2, p3};
 }
 
-template<typename T>
+template <typename T>
 inline Mat_33<T>::Mat_33(Mat_33<T> &&obj){
 	mat = obj.mat;
 	obj.mat = nullptr;
@@ -169,7 +169,7 @@ inline void Mat_33<T>::svd_rotation (Mat_33<T> &v, Mat_33<T> &u){
 
 }
 
-template<typename T>
+template <typename T>
 inline Mat_33<T> Mat_33<T>::inv() const {
 
 	using namespace cv;
@@ -224,7 +224,7 @@ inline Mat_33<T> & Mat_33<T>::operator=(Mat_33<T> &&a) {
 	return *this;
 }
 
-template<typename T>
+template <typename T>
 inline Points<T> Mat_33<T>::operator*(const Points<T> &b) const{
 	T to_c0{mat[0][0] * b[0] + mat[0][1] * b[1] + mat[0][2] * b[2]};
 	T to_c1{mat[1][0] * b[0] + mat[1][1] * b[1] + mat[1][2] * b[2]};
@@ -233,7 +233,7 @@ inline Points<T> Mat_33<T>::operator*(const Points<T> &b) const{
 	return temp;
 }
 
-template<typename T>
+template <typename T>
 inline Mat_33<T> Mat_33<T>::operator+(const Mat_33<T> &a) const{
 	Mat_33<T> temp {mat[0][0] + a.mat[0][0], mat[0][1] + a.mat[0][1], mat[0][2] + a.mat[0][2],
 					mat[1][0] + a.mat[1][0], mat[1][1] + a.mat[1][1], mat[1][2] + a.mat[1][2],
@@ -241,7 +241,7 @@ inline Mat_33<T> Mat_33<T>::operator+(const Mat_33<T> &a) const{
 	return temp;
 }
 
-template<typename T>
+template <typename T>
 inline const T * Mat_33<T>::operator[](const size_t i) const{
 	if (i < 3) {
 		return mat[i];
@@ -250,7 +250,7 @@ inline const T * Mat_33<T>::operator[](const size_t i) const{
 	}
 }
 
-template<typename T>
+template <typename T>
 Mat_33<T>::~Mat_33(){
 	if (mat!=nullptr) {
 		delete[] mat[0];

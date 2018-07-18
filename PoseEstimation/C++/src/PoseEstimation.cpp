@@ -560,6 +560,10 @@ int main() {
 	Points<double> sv_t_23{};
 	Points<double> sv_t_31{};
 
+	Points<double> zero {0, 0, 0};
+	Vec_Points<double> sv_scene{};
+	sv_scene.assign(p3d_1.size(), zero);
+
 	int iterations {50};
 
 	for (int i{0}; i < iterations; ++i) {
@@ -573,6 +577,15 @@ int main() {
 						   sv_t_12, sv_t_23, sv_t_31,
 						   sv_u, sv_v, sv_w);
 	}
+
+	pose_scene (p3d_1, p3d_2, p3d_3,
+				sv_r_12, sv_r_23, sv_r_31,
+				sv_t_12, sv_t_23, sv_t_31,
+				sv_scene);
+
+	std::cout << "sv_scene==================================" << std::endl;
+	std::cout << sv_scene;
+	std::cout << "==========================================" << std::endl;
 
 
 /*
@@ -597,11 +610,8 @@ int main() {
 */
 
 
-	/*std::cout << "v=========================================" << std::endl;
-	std::cout << v;
-	std::cout << "==========================================" << std::endl;
 
-
+/*
 	Vec_Points<double> v2{};
 
 	Points<double> p1 {1,1,1};

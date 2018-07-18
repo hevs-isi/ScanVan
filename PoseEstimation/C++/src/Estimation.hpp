@@ -137,5 +137,42 @@ void estimation_rayons (const Vec_Points<T> &p3d_1, const Vec_Points<T> &p3d_2, 
 	}
 }
 
+template <typename T>
+void pose_scene (const Vec_Points<T> &p3d_1, const Vec_Points<T> &p3d_2, const Vec_Points<T> &p3d_3,
+				 const Mat_33<T> &sv_r_12, const Mat_33<T> &sv_r_23, const Mat_33<T> &sv_r_31,
+				 const Points<T> &sv_t_12, const Points<T> &sv_t_23, const Points<T> &sv_t_31,
+				 Vec_Points<T> &sv_scene) {
+
+	size_t longueur {p3d_1.size()};
+
+	Points<T> c1 {0, 0, 0};
+	Points<T> c2 {sv_t_12};
+	Points<T> c3 {sv_t_12 + sv_r_12 * sv_t_23};
+
+	Vec_Points<T> azim1m {p3d_1};
+	Vec_Points<T> azim2m {(p3d_2 * sv_r_23) * sv_r_31};
+	Vec_Points<T> azim3m {p3d_3 * sv_r_31};
+
+	for (size_t i{0}; i < longueur; ++i) {
+
+		Points<T> azim1 {azim1m[i]};
+		Points<T> azim2 {azim2m[i]};
+		Points<T> azim3 {azim3m[i]};
+
+		Mat_33<T> c {c1, c2, c3};
+		Mat_33<T> azim { azim1, azim2, azim3 };
+
+		Points<T> inter{};
+		inter = intersection (c, azim);
+
+		sv_scene[i] = inter;
+	}
+
+}
+
+
+
+
+
 
 #endif /* SRC_ESTIMATION_HPP_ */

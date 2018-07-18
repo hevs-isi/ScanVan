@@ -38,6 +38,7 @@ public:
 	void pop_back();
 	bool load_vecpoints (std::string &path);
 	bool save_vecpoints (std::string path) const;
+	void assign (size_t longueur, Points<T> &p);
 	size_t size() const { return m_pV->size(); }
 	Points<T> mean() const;
 	const Points<T> & operator[](const size_t i) const;
@@ -158,6 +159,14 @@ bool Vec_Points<T>::save_vecpoints(std::string path) const {
 }
 
 template <typename T>
+void Vec_Points<T>::assign (size_t longueur, Points<T> &p) {
+
+	for (size_t i{0}; i< longueur; ++i) {
+		m_pV->push_back(p);
+	}
+}
+
+template <typename T>
 inline Points<T> Vec_Points<T>::mean() const{
 	T x{0}, y{0}, z{0};
 	for (auto p:(*m_pV)) {
@@ -196,7 +205,7 @@ inline Vec_Points<T> & Vec_Points<T>::operator=(const Vec_Points<T> &a) {
 	return *this;
 }
 
-template<typename T>
+template <typename T>
 inline Mat_33<T> Vec_Points<T>::operator*(const Vec_Points<T> &b) const {
 // Multiplication of Vec_Points transposed by Vec_Points
 	if (this->size() != b.size()) {
