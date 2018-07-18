@@ -14,13 +14,16 @@ public:
 	Mat_33();
 	Mat_33(T a00, T a01, T a02, T a10, T a11, T a12, T a20, T a21, T a22);
 	Mat_33(std::initializer_list<T> a0, std::initializer_list<T> a1, std::initializer_list<T> a2);
+	Mat_33(const Points<T> &c1, const Points<T> &c2, const Points<T> &c3);
 	Mat_33(const Mat_33<T> &obj);
 	Mat_33(Mat_33<T> &&obj);
 	void svd (Mat_33<T> &ut, Mat_33<T> &v) const;
 	void svd_rotation (Mat_33<T> &v, Mat_33<T> &u);
+	Mat_33<T> inv () const;
 	Mat_33<T> & operator=(const Mat_33<T> &a);
 	Mat_33<T> & operator=(Mat_33<T> &&a);
 	Points<T> operator*(const Points<T> &b) const;
+	Mat_33<T> operator+(const Mat_33<T> &a) const;
 	const T * operator[](const size_t i) const;
 	virtual ~Mat_33();
 	friend std::ostream & operator <<(std::ostream & out, const Mat_33<T> &a) {
@@ -65,6 +68,14 @@ inline Mat_33<T>::Mat_33(std::initializer_list<T> a0, std::initializer_list<T> a
 	for (const T &x : a2) {
 		mat[2][index++] = x;
 	}
+}
+
+template<typename T>
+inline Mat_33<T>::Mat_33(const Points<T> &c1, const Points<T> &c2, const Points<T> &c3) {
+	T *p1 = new T[3]{c1[0], c1[1], c1[2]};
+	T *p2 = new T[3]{c2[0], c2[1], c2[2]};
+	T *p3 = new T[3]{c3[0], c3[1], c3[2]};
+	mat = new T *[3]{p1, p2, p3};
 }
 
 template<typename T>
@@ -158,6 +169,32 @@ inline void Mat_33<T>::svd_rotation (Mat_33<T> &v, Mat_33<T> &u){
 
 }
 
+template<typename T>
+inline Mat_33<T> Mat_33<T>::inv() const {
+
+	using namespace cv;
+
+	Mat m(3, 3, CV_64FC1);
+	m.at<double>(0, 0) = mat[0][0];
+	m.at<double>(0, 1) = mat[0][1];
+	m.at<double>(0, 2) = mat[0][2];
+	m.at<double>(1, 0) = mat[1][0];
+	m.at<double>(1, 1) = mat[1][1];
+	m.at<double>(1, 2) = mat[1][2];
+	m.at<double>(2, 0) = mat[2][0];
+	m.at<double>(2, 1) = mat[2][1];
+	m.at<double>(2, 2) = mat[2][2];
+
+	Mat res(3, 3, CV_64FC1);
+	res = m.inv();
+
+	Mat_33<T> temp {res.at<double>(0, 0), res.at<double>(0, 1), res.at<double>(0, 2),
+					res.at<double>(1, 0), res.at<double>(1, 1), res.at<double>(1, 2),
+					res.at<double>(2, 0), res.at<double>(2, 1), res.at<double>(2, 2)};
+
+	return temp;
+}
+
 template <typename T>
 inline Mat_33<T> & Mat_33<T>::operator=(const Mat_33<T> &a) {
 	if (this != &a){
@@ -193,6 +230,14 @@ inline Points<T> Mat_33<T>::operator*(const Points<T> &b) const{
 	T to_c1{mat[1][0] * b[0] + mat[1][1] * b[1] + mat[1][2] * b[2]};
 	T to_c2{mat[2][0] * b[0] + mat[2][1] * b[1] + mat[2][2] * b[2]};
 	Points<T> temp{to_c0, to_c1, to_c2};
+	return temp;
+}
+
+template<typename T>
+inline Mat_33<T> Mat_33<T>::operator+(const Mat_33<T> &a) const{
+	Mat_33<T> temp {mat[0][0] + a.mat[0][0], mat[0][1] + a.mat[0][1], mat[0][2] + a.mat[0][2],
+					mat[1][0] + a.mat[1][0], mat[1][1] + a.mat[1][1], mat[1][2] + a.mat[1][2],
+					mat[2][0] + a.mat[2][0], mat[2][1] + a.mat[2][1], mat[2][2] + a.mat[2][2]};
 	return temp;
 }
 

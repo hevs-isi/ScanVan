@@ -16,8 +16,11 @@ public:
 	void SetValue (T x, T y, T z);
 	T GetValue (size_t pos) const;
 	virtual ~Points();
+	T norm() const;
 	Points<T> operator+(const Points<T> &a) const;
 	Points<T> operator-(const Points<T> &a) const;
+	T operator*(const Points<T> &a) const;
+	Points<T> operator*(const T c) const;
 	Points<T> & operator=(const Points<T> &a);
 	Points<T> & operator=(Points<T> &&a);
 	const T & operator[](const size_t i) const;
@@ -64,6 +67,11 @@ T Points<T>::GetValue (size_t pos) const {
 	return m_pA->at(pos);
 }
 
+template <typename T>
+T Points<T>::norm() const{
+	T temp = sqrt(m_pA->at(0)*m_pA->at(0) + m_pA->at(1)*m_pA->at(1) + m_pA->at(2)*m_pA->at(2));
+	return temp;
+}
 
 template <typename T>
 Points<T>::~Points() {
@@ -100,6 +108,19 @@ inline Points<T> Points<T>::operator-(const Points<T> &a) const{
 	Points<T> temp{m_pA->at(0) - a.m_pA->at(0), m_pA->at(1) - a.m_pA->at(1), m_pA->at(2) - a.m_pA->at(2)};
 	return temp;
 }
+
+template <typename T>
+inline T Points<T>::operator*(const Points<T> &a) const{
+	T temp {m_pA->at(0) * a.m_pA->at(0) + m_pA->at(1) * a.m_pA->at(1) + m_pA->at(2) * a.m_pA->at(2)};
+	return temp;
+}
+
+template <typename T>
+inline Points<T> Points<T>::operator*(const T c) const{
+	Points<T> temp {m_pA->at(0) * c, m_pA->at(1) * c, m_pA->at(2) * c};
+	return temp;
+}
+
 
 template <typename T>
 inline const T & Points<T>::operator[](const size_t i) const{

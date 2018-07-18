@@ -57,6 +57,38 @@ void estimation_rot_trans (const Vec_Points<T> &p3d_1, const Vec_Points<T> &p3d_
 }
 
 template <typename T>
+Points<T> intersection (const Mat_33<T> &c, const Mat_33<T> &azim){
+
+	std::vector<Mat_33<T>> v{};
+	std::vector<Points<T>> vp{};
+
+	for (int i{0}; i<3; ++i) {
+		T a0 = azim[i][0];
+		T a1 = azim[i][1];
+		T a2 = azim[i][2];
+
+		Mat_33<T> v1{1 - a0*a0 ,    -a0*a1 ,    -a0*a2,
+						-a1*a0 , 1 - a1*a1 ,    -a1*a2,
+						-a2*a0 ,    -a2*a1 , 1 - a2*a2};
+
+		v.push_back(v1);
+
+		Points<T> row {c[i][0], c[i][1], c[i][2]};
+		Points<T> vp1 {v1 * row};
+		vp.push_back(vp1);
+	}
+
+	Mat_33<T> sum_v = v[0] + v[1] + v[2];
+	Points<T> sum_vp = vp[0] + vp[1] + vp[2];
+
+	Mat_33<T> sum_v_inv {sum_v.inv()};
+
+	Points<T> inter {sum_v_inv * sum_vp};
+
+	return inter;
+}
+
+template <typename T>
 void estimation_rayons (const Vec_Points<T> &p3d_1, const Vec_Points<T> &p3d_2, const Vec_Points<T> &p3d_3,
 						const Mat_33<T> &sv_r_12, const Mat_33<T> &sv_r_23, const Mat_33<T> &sv_r_31,
 						const Points<T> &sv_t_12, const Points<T> &sv_t_23, const Points<T> &sv_t_31,
@@ -73,81 +105,37 @@ void estimation_rayons (const Vec_Points<T> &p3d_1, const Vec_Points<T> &p3d_2, 
 	sv_v.assign(longueur, 0);
 	sv_w.assign(longueur, 0);
 
-/*
-	std::cout << sv_u[0] << std::endl;
-	std::cout << sv_u[longueur-1] << std::endl;
-*/
+	Vec_Points<T> azim1m {p3d_1};
+	Vec_Points<T> azim2m {(p3d_2 * sv_r_23) * sv_r_31};
+	Vec_Points<T> azim3m {p3d_3 * sv_r_31};
 
-/*
-	Mat_33<T> a{0,1,2,3,4,5,6,7,8};
-	std::cout << a[2][2] << std::endl;
-*/
+	for (size_t i{0}; i<longueur; ++i)
+	{
 
+		Points<T> azim1 {azim1m[i]};
+		Points<T> azim2 {azim2m[i]};
+		Points<T> azim3 {azim3m[i]};
 
-/*
-	std::cout << c1 << std::endl;
-	std::cout << c2 << std::endl;
-	std::cout << c3 << std::endl;
-*/
+		Mat_33<T> c {c1, c2, c3};
+		Mat_33<T> azim { azim1, azim2, azim3 };
 
-/*
-	Mat c1(1, 3, CV_64FC1, double(0));
-	Mat c2(1, 3, CV_64FC1);
-	Mat c3(1, 3, CV_64FC1);
+		Points<T> inter{};
+		inter = intersection (c, azim);
 
-	c2 = c1 + sv_t_12;
-	c3 = c2 + (sv_r_12 * sv_t_23.t()).t();
+		T factor1 { ((inter - c1) * azim1) / (azim1 * azim1) };
+		T factor2 { ((inter - c2) * azim2) / (azim2 * azim2) };
+		T factor3 { ((inter - c3) * azim3) / (azim3 * azim3) };
 
-	for (int i=0; i<longueur; ++i) {
-		sv_u[i]=0;
-		sv_v[i]=0;
-		sv_w[i]=0;
+		Points<T> inter1 { c1 + azim1 * factor1 };
+		Points<T> inter2 { c2 + azim2 * factor2 };
+		Points<T> inter3 { c3 + azim3 * factor3 };
+
+		sv_u[i] = (inter1 - c1).norm();
+		sv_v[i] = (inter2 - c2).norm();
+		sv_w[i] = (inter3 - c3).norm();
+
 	}
-
-	for (int i=0; i<longueur; ++i) {
-
-		Mat azim1(1, 3, CV_64FC1);
-		Mat azim2(1, 3, CV_64FC1);
-		Mat azim3(1, 3, CV_64FC1);
-
-		azim1.at<double>(0, 0) = p3d_1[i].x;
-		azim1.at<double>(0, 1) = p3d_1[i].y;
-		azim1.at<double>(0, 2) = p3d_1[i].z;
-
-		azim2.at<double>(0, 0) = p3d_2[i].x;
-		azim2.at<double>(0, 1) = p3d_2[i].y;
-		azim2.at<double>(0, 2) = p3d_2[i].z;
-
-		azim3.at<double>(0, 0) = p3d_3[i].x;
-		azim3.at<double>(0, 1) = p3d_3[i].y;
-		azim3.at<double>(0, 2) = p3d_3[i].z;
-
-		azim2 = azim2 * sv_r_23;
-		azim2 = azim2 * sv_r_31;
-		azim3 = azim3 * sv_r_31;
-
-		Mat inter(1, 3, CV_64FC1);
-
-		intersection (c1, c2, c3, azim1, azim2, azim3, inter);
-
-		Mat inter1(1, 3, CV_64FC1);
-		Mat inter2(1, 3, CV_64FC1);
-		Mat inter3(1, 3, CV_64FC1);
-
-		inter1 = c1 + (((inter - c1) * azim1.t()) / (azim1.dot(azim1))) * azim1;
-		inter2 = c2 + (((inter - c2) * azim2.t()) / (azim2.dot(azim2))) * azim2;
-		inter3 = c3 + (((inter - c3) * azim3.t()) / (azim3.dot(azim3))) * azim3;
-
-		sv_u[i] = norm(inter1 - c1);
-		sv_v[i] = norm(inter2 - c2);
-		sv_w[i] = norm(inter3 - c3);
-	}
-*/
-
 }
-
-
-
 
 
 #endif /* SRC_ESTIMATION_HPP_ */
