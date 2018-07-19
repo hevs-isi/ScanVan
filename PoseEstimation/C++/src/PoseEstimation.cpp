@@ -15,6 +15,7 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #include <limits>
+#include <chrono>
 
 using namespace std;
 // Namespace for using OpenCV objects.
@@ -583,12 +584,23 @@ int main() {
 		sv_scene.push_back(p);
 	}
 
+	// For timing measurements
+	std::chrono::high_resolution_clock::time_point t1{};
+	std::chrono::high_resolution_clock::time_point t2{};
+
+	t1 = std::chrono::high_resolution_clock::now();
+
 	for (int i=0; i<iterations; ++i) {
 		estimation_rot_trans (p3d_1, p3d_2, p3d_3, sv_u, sv_v, sv_w, sv_r_12, sv_r_23, sv_r_31, sv_t_12, sv_t_23, sv_t_31);
 		estimation_rayons (p3d_1, p3d_2, p3d_3, sv_r_12, sv_r_23, sv_r_31, sv_t_12, sv_t_23, sv_t_31, sv_u, sv_v, sv_w);
 	}
 
 	pose_scene (p3d_1, p3d_2, p3d_3, sv_r_12, sv_r_23, sv_r_31, sv_t_12, sv_t_23, sv_t_31, sv_scene);
+
+	t2 = std::chrono::high_resolution_clock::now();
+
+	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+	std::cout << "execution time: " << duration << " microseconds" << std::endl;
 
 	if (writeVector ("/home/scanvan/dev/ScanVan/PoseEstimation/C++/sv_scene.txt", sv_scene)) {
 		cerr << "Error writing file" << endl;
