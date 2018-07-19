@@ -16,6 +16,7 @@
 
 #include <limits>
 #include <chrono>
+#include <unistd.h>
 
 using namespace std;
 // Namespace for using OpenCV objects.
@@ -28,6 +29,13 @@ typedef struct Point {
 } Point_t;
 
 typedef numeric_limits<double> dbl;
+
+std::string GetCurrentWorkingDir (void) {
+	char buff[FILENAME_MAX]{};
+	getcwd (buff, FILENAME_MAX);
+	std::string current_working_dir(buff);
+	return current_working_dir;
+}
 
 void printMatrix(Mat M) {
 	cout << "Type of matrix: " << M.type() << endl;
@@ -90,13 +98,13 @@ int loadVector (string inputFileName, vector<Point_t> &p)
 int loadVectors (vector<Point_t> &p3d_1, vector<Point_t> &p3d_2, vector<Point_t> &p3d_3)
 {
 
-	string inputFileName = "/home/scanvan/dev/ScanVan/PoseEstimation/C++/data/p3d_1.txt";
+	string inputFileName = GetCurrentWorkingDir() + "/data/p3d_1.txt";
 	if (loadVector(inputFileName, p3d_1))
 		return 1;
-	inputFileName = "/home/scanvan/dev/ScanVan/PoseEstimation/C++/data/p3d_2.txt";
+	inputFileName = GetCurrentWorkingDir() + "/data/p3d_2.txt";
 	if (loadVector(inputFileName, p3d_2))
 		return 1;
-	inputFileName = "/home/scanvan/dev/ScanVan/PoseEstimation/C++/data/p3d_3.txt";
+	inputFileName = GetCurrentWorkingDir() + "/data/p3d_3.txt";
 	if (loadVector(inputFileName, p3d_3))
 		return 1;
 
@@ -477,7 +485,7 @@ int main() {
 	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
 	std::cout << "execution time: " << duration << " microseconds" << std::endl;
 
-	if (writeVector ("/home/scanvan/dev/ScanVan/PoseEstimation/C++/data/sv_scene.txt", sv_scene)) {
+	if (writeVector (GetCurrentWorkingDir() + "/data/sv_scene.txt", sv_scene)) {
 		cerr << "Error writing file" << endl;
 		exit(1);
 	}
