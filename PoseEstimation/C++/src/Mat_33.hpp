@@ -250,7 +250,7 @@ inline const T * Mat_33<T>::operator[](const size_t i) const{
 }
 
 template <typename T>
-Mat_33<T>::~Mat_33(){
+inline Mat_33<T>::~Mat_33(){
 	if (mat!=nullptr) {
 		delete[] mat[0];
 		delete[] mat[1];

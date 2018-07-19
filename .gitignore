@@ -46,3 +46,5 @@ language.settings.xml
 test
 .gitattributes
 
+# PoseEstimation
+sv_scene.txt

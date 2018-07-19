@@ -12,11 +12,10 @@
 #include "Points.hpp"
 #include "Vec_Points.hpp"
 #include "Estimation.hpp"
-#include <time.h>
 #include <chrono>
-#include <unistd.h>
 
 std::string GetCurrentWorkingDir( void ) {
+// gets the current working directory
   char buff[FILENAME_MAX]{};
   getcwd( buff, FILENAME_MAX );
   std::string current_working_dir(buff);
@@ -25,12 +24,13 @@ std::string GetCurrentWorkingDir( void ) {
 
 int main() {
 
-	// set path to input/output data
+	// Set path to input data
 	std::string path2data = GetCurrentWorkingDir() + "/data/";
 	std::string path_data1 = path2data + "p3d_1.txt";
 	std::string path_data2 = path2data + "p3d_2.txt";
 	std::string path_data3 = path2data + "p3d_3.txt";
 
+	// Input vector of points
 	Vec_Points<double> p3d_1 { };
 	Vec_Points<double> p3d_2 { };
 	Vec_Points<double> p3d_3 { };
@@ -53,63 +53,45 @@ int main() {
 	std::vector<double> sv_v(p3d_2.size(),1);
 	std::vector<double> sv_w(p3d_3.size(),1);
 
+	// Rotation matrices
 	Mat_33<double> sv_r_12{};
 	Mat_33<double> sv_r_23{};
 	Mat_33<double> sv_r_31{};
 
+	// Translation vectors
 	Points<double> sv_t_12{};
 	Points<double> sv_t_23{};
 	Points<double> sv_t_31{};
 
+	// Output result, vector of points
 	Vec_Points<double> sv_scene{p3d_1.size()};
 
+	// This sets the number of iterations in the algorithm
 	int iterations {50};
 
 	// For timing measurements
 	std::chrono::high_resolution_clock::time_point t1{};
 	std::chrono::high_resolution_clock::time_point t2{};
 
+	// start measuring time
 	t1 = std::chrono::high_resolution_clock::now();
 
+	// main algorithm
 	pose_estimation (p3d_1, p3d_2, p3d_3,
 					 iterations,
 					 sv_scene,
 					 sv_r_12, sv_r_23, sv_r_31,
 					 sv_t_12, sv_t_23, sv_t_31);
 
+	// stop measuring time
 	t2 = std::chrono::high_resolution_clock::now();
 
 	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-	std::cout << "execution time: " << duration << " microseconds" << std::endl;
+	std::cout << "Number of points: " << p3d_1.size() << std::endl;
+	std::cout << "Number of iterations: " << iterations << std::endl;
+	std::cout << "Execution time: " << duration << " microseconds" << std::endl;
 
-	std::cout << "sv_scene==================================" << std::endl;
-	std::cout << sv_scene;
-	std::cout << "==========================================" << std::endl;
-
-	std::cout << "sv_r_12===================================" << std::endl;
-	std::cout << sv_r_12;
-	std::cout << "==========================================" << std::endl;
-
-	std::cout << "sv_r_23===================================" << std::endl;
-	std::cout << sv_r_23;
-	std::cout << "==========================================" << std::endl;
-
-	std::cout << "sv_r_31===================================" << std::endl;
-	std::cout << sv_r_31;
-	std::cout << "==========================================" << std::endl;
-
-	std::cout << "sv_t_12===================================" << std::endl;
-	std::cout << sv_t_12;
-	std::cout << "==========================================" << std::endl;
-
-	std::cout << "sv_t_23===================================" << std::endl;
-	std::cout << sv_t_23;
-	std::cout << "==========================================" << std::endl;
-
-	std::cout << "sv_t_31===================================" << std::endl;
-	std::cout << sv_t_31;
-	std::cout << "==========================================" << std::endl;
-
+	// setup path to save the output result
 	std::string path_out_data1 = path2data + "sv_scene.txt";
 
 	if (sv_scene.save_vecpoints(path_out_data1)) {

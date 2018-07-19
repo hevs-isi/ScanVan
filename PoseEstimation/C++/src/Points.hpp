@@ -32,35 +32,35 @@ public:
 };
 
 template <typename T>
-Points<T>::Points () {
+inline Points<T>::Points () {
 	m_pA = new std::array <T, 3> {{0, 0, 0}};
 };
 
 template <typename T>
-Points<T>::Points (T x, T y, T z) {
+inline Points<T>::Points (T x, T y, T z) {
 	m_pA = new std::array <T, 3> {{x, y, z}};
 };
 
 template <typename T>
-Points<T>::Points (const Points &obj){
+inline Points<T>::Points (const Points &obj){
 	m_pA = new std::array <T, 3> {{obj.m_pA->at(0), obj.m_pA->at(1), obj.m_pA->at(2)}};
 }
 
 template <typename T>
-Points<T>::Points (Points &&obj) {
+inline Points<T>::Points (Points &&obj) {
 	m_pA = obj.m_pA;
 	obj.m_pA = nullptr;
 }
 
 template <typename T>
-void Points<T>::SetValue (T x, T y, T z) {
+inline void Points<T>::SetValue (T x, T y, T z) {
 	m_pA->at(0) = x;
 	m_pA->at(1) = y;
 	m_pA->at(2) = z;
 }
 
 template <typename T>
-T Points<T>::GetValue (size_t pos) const {
+inline T Points<T>::GetValue (size_t pos) const {
 	if (pos>2) {
 		throw std::runtime_error("Point coordinate must be between 0 and 2.");
 	}
@@ -68,13 +68,14 @@ T Points<T>::GetValue (size_t pos) const {
 }
 
 template <typename T>
-T Points<T>::norm() const{
+inline T Points<T>::norm() const{
+// Computes the norm of a point
 	T temp = sqrt(m_pA->at(0)*m_pA->at(0) + m_pA->at(1)*m_pA->at(1) + m_pA->at(2)*m_pA->at(2));
 	return temp;
 }
 
 template <typename T>
-Points<T>::~Points() {
+inline Points<T>::~Points() {
 	delete m_pA;
 }
 
@@ -99,18 +100,21 @@ inline Points<T> & Points<T>::operator=(Points<T> &&a){
 
 template <typename T>
 inline Points<T> Points<T>::operator+(const Points<T> &a) const{
+// Adds two points
 	Points<T> temp{m_pA->at(0) + a.m_pA->at(0), m_pA->at(1) + a.m_pA->at(1), m_pA->at(2) + a.m_pA->at(2)};
 	return temp;
 }
 
 template <typename T>
 inline Points<T> Points<T>::operator-(const Points<T> &a) const{
+// Subtract two points
 	Points<T> temp{m_pA->at(0) - a.m_pA->at(0), m_pA->at(1) - a.m_pA->at(1), m_pA->at(2) - a.m_pA->at(2)};
 	return temp;
 }
 
 template <typename T>
 inline T Points<T>::operator*(const Points<T> &a) const{
+// Computes the dot product between two points
 	T temp {m_pA->at(0) * a.m_pA->at(0) + m_pA->at(1) * a.m_pA->at(1) + m_pA->at(2) * a.m_pA->at(2)};
 	return temp;
 }

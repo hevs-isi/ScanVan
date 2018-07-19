@@ -61,24 +61,25 @@ public:
 };
 
 template <typename T>
-Vec_Points<T>::Vec_Points() {
+inline Vec_Points<T>::Vec_Points() {
 	m_pV = new vecpoint_t<T>{};
 }
 
 template <typename T>
-Vec_Points<T>::Vec_Points(const Vec_Points<T> &obj){
+inline Vec_Points<T>::Vec_Points(const Vec_Points<T> &obj){
 	m_pV = new vecpoint_t<T>{};
 	(*m_pV) = *(obj.m_pV);
 }
 
 template <typename T>
-Vec_Points<T>::Vec_Points(Vec_Points<T> &&obj){
+inline Vec_Points<T>::Vec_Points(Vec_Points<T> &&obj){
 	m_pV = obj.m_pV;
 	obj.m_pV = nullptr;
 }
 
 template <typename T>
-Vec_Points<T>::Vec_Points(size_t longueur, Points<T> &p){
+inline Vec_Points<T>::Vec_Points(size_t longueur, Points<T> &p){
+// Constructor initializing the Vec_Points with longueur copies of Points p
 	m_pV = new vecpoint_t<T>{};
 	for (size_t i{0}; i < longueur; ++i) {
 		m_pV->push_back(p);
@@ -86,7 +87,8 @@ Vec_Points<T>::Vec_Points(size_t longueur, Points<T> &p){
 }
 
 template <typename T>
-Vec_Points<T>::Vec_Points(size_t longueur) {
+inline Vec_Points<T>::Vec_Points(size_t longueur) {
+// Constructor initializing the Vec_Points with longueur copies of null points
 	m_pV = new vecpoint_t<T>{};
 	Points<T> zeros {0, 0, 0};
 	for (size_t i{0}; i < longueur; ++i) {
@@ -95,18 +97,18 @@ Vec_Points<T>::Vec_Points(size_t longueur) {
 }
 
 template <typename T>
-void Vec_Points<T>::push_back (const Points<T> &p){
+inline void Vec_Points<T>::push_back (const Points<T> &p){
 	m_pV->push_back(p);
 }
 
 template <typename T>
-void Vec_Points<T>::push_back(T x, T y, T z){
+inline void Vec_Points<T>::push_back(T x, T y, T z){
 	Points<T> p1{x,y,z};
 	push_back(p1);
 }
 
 template <typename T>
-void Vec_Points<T>::pop_back(){
+inline void Vec_Points<T>::pop_back(){
 	m_pV->pop_back();
 }
 
@@ -178,7 +180,8 @@ bool Vec_Points<T>::save_vecpoints(std::string path) const {
 }
 
 template <typename T>
-void Vec_Points<T>::assign (size_t longueur, Points<T> &p) {
+inline void Vec_Points<T>::assign (size_t longueur, Points<T> &p) {
+// Assigns to the Vec_Points longueur copies of Points p
 
 	if (m_pV->size() < longueur) {
 		for (size_t i{0}; i< m_pV->size(); ++i) {
@@ -275,7 +278,6 @@ inline Vec_Points<T>  Vec_Points<T>::operator*(const std::vector<T> &p) const{
 	return temp;
 }
 
-
 template <typename T>
 inline Vec_Points<T> Vec_Points<T>::operator*(const Mat_33<T> &a) const{
 // Multiplication of Vec_Points with a Mat_33
@@ -290,13 +292,11 @@ inline Vec_Points<T> Vec_Points<T>::operator*(const Mat_33<T> &a) const{
 	return temp;
 }
 
-
-
 template <typename T>
 inline Vec_Points<T> Vec_Points<T>::operator-(const Points<T> &p) {
 	Vec_Points<T> temp{};
 	Points<T> temp_P{};
-	for (auto &x : (*m_pV)) {
+	for (const auto &x : (*m_pV)) {
 		temp_P[0] = x[0] - p[0];
 		temp_P[1] = x[1] - p[1];
 		temp_P[2] = x[2] - p[2];
@@ -306,9 +306,8 @@ inline Vec_Points<T> Vec_Points<T>::operator-(const Points<T> &p) {
 }
 
 template <typename T>
-Vec_Points<T>::~Vec_Points() {
+inline Vec_Points<T>::~Vec_Points() {
 	delete m_pV;
 }
-
 
 #endif /* SRC_VEC_POINTS_HPP_ */
