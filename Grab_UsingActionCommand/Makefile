@@ -17,7 +17,7 @@ LDLIBS     := $(shell $(PYLON_ROOT)/bin/pylon-config --libs) $(shell pkg-config 
 # Rules for building
 all: $(NAME)
 
-$(NAME): $(NAME).o
+$(NAME): $(NAME).o 
 	$(LD) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 $(NAME).o: $(NAME).cpp

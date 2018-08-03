@@ -32,6 +32,8 @@
 // To manage threads
 #include <pthread.h>
 
+#include "Images.hpp"
+
 // Settings to use Basler GigE cameras.
 using namespace Basler_GigECameraParams;
 

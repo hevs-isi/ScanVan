@@ -17,7 +17,9 @@
 std::string GetCurrentWorkingDir( void ) {
 // gets the current working directory
   char buff[FILENAME_MAX]{};
-  getcwd( buff, FILENAME_MAX );
+  if (getcwd( buff, FILENAME_MAX )==nullptr) {
+	  throw (std::runtime_error("The directory could not be determined."));
+  }
   std::string current_working_dir(buff);
   return current_working_dir;
 }
