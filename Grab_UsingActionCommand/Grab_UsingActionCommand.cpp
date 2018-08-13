@@ -31,6 +31,7 @@
 
 // To manage threads
 #include <pthread.h>
+#include <array>
 
 #include "Images.hpp"
 

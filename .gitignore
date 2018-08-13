@@ -33,6 +33,7 @@
 
 # Images
 *.bmp
+*.raw
 
 *backup*
 *.bkp
