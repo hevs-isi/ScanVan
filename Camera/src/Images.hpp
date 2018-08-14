@@ -7,10 +7,12 @@
 #include <iostream>
 #include <fstream>
 
+
 // Include files to use OpenCV API
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+
 
 class Images {
 private:
@@ -64,6 +66,8 @@ public:
 	void copyBuffer (char *p);
 
 	void loadImage (std::string path);
+	void saveImage (std::string path);
+	void saveData (std::string path);
 	void show ();
 	void show (std::string name);
 
@@ -152,11 +156,67 @@ void Images::loadImage(std::string path) {
 			char * buffer = new char[length] { };
 			myFile.read(buffer, length);
 			p_img->assign(buffer, buffer + length);
+			myFile.close();
 		} else {
 			throw std::runtime_error("Image file extension not recognized.");
 		}
 	} else {
 		throw std::runtime_error("Image file extension not recognized.");
+	}
+}
+
+void Images::saveImage(std::string path) {
+	std::string ext = path.substr(path.find_last_of(".") + 1);
+
+	// Save the raw image into file
+	if (ext == "raw") {
+		std::ofstream myFile(path, std::ios::out | std::ios::binary);
+		if (myFile.is_open()) {
+			myFile.write(reinterpret_cast<char*>(p_img->data()), height * width);
+			myFile.close();
+		} else {
+			throw std::runtime_error("Error to write the image file");
+		}
+	} else if (ext == "bmp") {
+		cv::Mat openCvImageRG8;
+		cv::Mat openCvImage;
+		openCvImageRG8 = cv::Mat(height, width, CV_8UC1, p_img->data());
+		cv::cvtColor(openCvImageRG8, openCvImage, cv::COLOR_BayerRG2RGB);
+		try {
+			imwrite(path, openCvImage);
+		}
+		catch (std::runtime_error& ex) {
+			std::cerr << "Error writing the bmp file: " << ex.what() << std::endl;
+			throw ex;
+		}
+
+	} else {
+		throw std::runtime_error("File extension not recognized when trying to save the image.");
+	}
+}
+
+void Images::saveData(std::string path) {
+	std::string path_raw = path + ".raw";
+	saveImage (path_raw);
+	std::string path_bmp = path + ".bmp";
+	saveImage (path_bmp);
+	std::string path_data = path + ".txt";
+	std::ofstream myFile(path_data);
+	if (myFile.is_open()) {
+		myFile << "Raw picture file: " << path_raw << "\n";
+		myFile << "Camera Index: " << cameraIdx << "\n";
+		//time_t my_time = captureTime;
+		myFile << "Capture Time: " << ctime(&captureTime);
+		myFile << "Exposure Time: " << exposureTime << "\n";
+		myFile << "Gain: " << gain << "\n";
+		myFile << "Balance Red  : " << balanceR << "\n";
+		myFile << "Balance Green: " << balanceG << "\n";
+		myFile << "Balance Blue : " << balanceB << "\n";
+		myFile << "Auto Exposure Time Continuous: " << autoExpTime << "\n";
+		myFile << "Auto Gain Continuous: " << autoGain << "\n";
+		myFile.close();
+	} else {
+		throw std::runtime_error ("Could not open the file to save camera data");
 	}
 }
 

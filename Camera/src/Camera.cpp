@@ -3,7 +3,7 @@
 // Author      : Marcelo Kaihara
 // Version     :
 // Copyright   : 
-// Description : Hello World in C++, Ansi-style
+// Description : Grabs images from the camera and writes the data into file.
 //============================================================================
 
 #include <iostream>
@@ -30,18 +30,11 @@ int main() {
 
 	std::string curr_path = GetCurrentWorkingDir();
 	std::string img_path = curr_path + "/" + "img_0_0.raw";
+	std::string img_path_out = curr_path + "/" + "img_0_1";
 	Images img1 {img_path};
-	char * newimg = new char [img1.getHeight() * img1.getWidth()] {};
-	img1.getBuffer(newimg);
-	Images img2 {};
-	img2.copyBuffer(newimg);
-	img2.show("Img2");
-	img2.setCameraIdx(1);
-	std::cout << img2 << std::endl;
+	img1.saveData(img_path_out);
+	img1.show("Img1");
 	cv::waitKey(0);
-
-
-
 
 	return 0;
 }
