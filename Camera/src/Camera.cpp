@@ -27,16 +27,21 @@ std::string GetCurrentWorkingDir( void ) {
 }
 
 int main() {
+
 	std::string curr_path = GetCurrentWorkingDir();
-		std::cout << curr_path << std::endl;
-		std::string img_path = curr_path + "/" + "img_0_0.raw";
-		std::cout << img_path << std::endl;
-		std::string path {img_path};
-		std::string ext = path.substr(path.find_last_of(".") + 1);
-		std::cout << ext << std::endl;
-		Images img1{path};
-		img1.show();
-		cv::waitKey(0);
+	std::string img_path = curr_path + "/" + "img_0_0.raw";
+	Images img1 {img_path};
+	char * newimg = new char [img1.getHeight() * img1.getWidth()] {};
+	img1.getBuffer(newimg);
+	Images img2 {};
+	img2.copyBuffer(newimg);
+	img2.show("Img2");
+	img2.setCameraIdx(1);
+	std::cout << img2 << std::endl;
+	cv::waitKey(0);
+
+
+
 
 	return 0;
 }
