@@ -13,6 +13,20 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+template<typename T>
+std::string toString(const T &t) {
+    std::ostringstream oss{};
+    oss << t;
+    return oss.str();
+}
+
+template<typename T>
+T fromString( const std::string& s ) {
+    std::istringstream stream( s );
+    T t{};
+    stream >> t;
+    return t;
+}
 
 class Images {
 private:
@@ -67,6 +81,7 @@ public:
 
 	void loadImage (std::string path);
 	void saveImage (std::string path);
+	void loadData (std::string path);
 	void saveData (std::string path);
 	void show ();
 	void show (std::string name);
@@ -195,15 +210,27 @@ void Images::saveImage(std::string path) {
 	}
 }
 
-void Images::saveData(std::string path) {
+void Images::loadData(std::string path) {
+
+
 	std::string path_raw = path + ".raw";
-	saveImage (path_raw);
-	std::string path_bmp = path + ".bmp";
-	saveImage (path_bmp);
+	loadImage (path_raw);
+
 	std::string path_data = path + ".txt";
-	std::ofstream myFile(path_data);
+	std::ifstream myFile(path_data);
 	if (myFile.is_open()) {
-		myFile << "Raw picture file: " << path_raw << "\n";
+		std::string line{};
+		getline (myFile, line);
+		getline (myFile, line);
+		std::string token = line.substr(line.find_last_of(":") + 1);
+		cameraIdx = std::stoi (token);
+		std::cout << cameraIdx << std::endl;
+		getline (myFile, line);
+		std::string token2 = line.substr(line.find_last_of(":") + 2);
+		captureTime = fromString<time_t> (token2);
+		std::cout << "Capture Time: " << ctime(&captureTime);
+
+		/*myFile << "Raw picture file: " << path_raw << "\n";
 		myFile << "Camera Index: " << cameraIdx << "\n";
 		//time_t my_time = captureTime;
 		myFile << "Capture Time: " << ctime(&captureTime);
@@ -213,7 +240,43 @@ void Images::saveData(std::string path) {
 		myFile << "Balance Green: " << balanceG << "\n";
 		myFile << "Balance Blue : " << balanceB << "\n";
 		myFile << "Auto Exposure Time Continuous: " << autoExpTime << "\n";
-		myFile << "Auto Gain Continuous: " << autoGain << "\n";
+		myFile << "Auto Gain Continuous: " << autoGain << "\n";*/
+		myFile.close();
+	} else {
+		throw std::runtime_error("Could not open the file to load camera data");
+	}
+
+
+
+
+}
+
+void Images::saveData(std::string path) {
+// Saves the raw image and the camera data to file
+// Here path is the name of the image file without extension
+// The function will automatically add the .raw for the raw data image and .txt for the camera
+// configuration.
+	std::string ext = path.substr(path.find_last_of(".") + 1);
+
+	std::string path_raw = path + ".raw";
+	saveImage (path_raw);
+	//std::string path_bmp = path + ".bmp";
+	//saveImage (path_bmp);
+	std::string path_data = path + ".txt";
+	std::ofstream myFile(path_data);
+	if (myFile.is_open()) {
+		myFile << "Raw picture file: " << path_raw << std::endl;
+		myFile << "Camera Index: " << cameraIdx << std::endl;
+		//time_t my_time = captureTime;
+		//myFile << "Capture Time: " << ctime(&captureTime);
+		myFile << "Capture Time: " << toString<time_t>(captureTime) << std::endl;
+		myFile << "Exposure Time: " << exposureTime << std::endl;
+		myFile << "Gain: " << gain << std::endl;
+		myFile << "Balance Red  : " << balanceR << std::endl;
+		myFile << "Balance Green: " << balanceG << std::endl;
+		myFile << "Balance Blue : " << balanceB << std::endl;
+		myFile << "Auto Exposure Time Continuous: " << autoExpTime << std::endl;
+		myFile << "Auto Gain Continuous: " << autoGain << std::endl;
 		myFile.close();
 	} else {
 		throw std::runtime_error ("Could not open the file to save camera data");
