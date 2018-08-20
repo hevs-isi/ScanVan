@@ -6,7 +6,8 @@
 #include <stdint.h>
 #include <iostream>
 #include <fstream>
-
+#include <chrono>
+#include <sstream>
 
 // Include files to use OpenCV API
 #include <opencv2/opencv.hpp>
@@ -85,6 +86,9 @@ public:
 	void saveData (std::string path);
 	void show ();
 	void show (std::string name);
+
+	std::string convertTimeToString (time_t t);
+	time_t convertStringToTime (std::string str);
 
 	Images & operator=(const Images &a);
 	Images & operator=(Images &&a);
@@ -219,37 +223,83 @@ void Images::loadData(std::string path) {
 	std::string path_data = path + ".txt";
 	std::ifstream myFile(path_data);
 	if (myFile.is_open()) {
+		std::stringstream ss{};
 		std::string line{};
 		getline (myFile, line);
+
 		getline (myFile, line);
 		std::string token = line.substr(line.find_last_of(":") + 1);
-		cameraIdx = std::stoi (token);
-		std::cout << cameraIdx << std::endl;
+		ss << token;
+		ss >> cameraIdx;
+		std::cout << "Camera Index: " << cameraIdx << std::endl;
+
 		getline (myFile, line);
-		std::string token2 = line.substr(line.find_last_of(":") + 2);
-		captureTime = fromString<time_t> (token2);
+		token = line.substr(line.find_first_of(":") + 1);
+		captureTime = convertStringToTime (token);
 		std::cout << "Capture Time: " << ctime(&captureTime);
 
-		/*myFile << "Raw picture file: " << path_raw << "\n";
-		myFile << "Camera Index: " << cameraIdx << "\n";
-		//time_t my_time = captureTime;
-		myFile << "Capture Time: " << ctime(&captureTime);
-		myFile << "Exposure Time: " << exposureTime << "\n";
-		myFile << "Gain: " << gain << "\n";
-		myFile << "Balance Red  : " << balanceR << "\n";
-		myFile << "Balance Green: " << balanceG << "\n";
-		myFile << "Balance Blue : " << balanceB << "\n";
-		myFile << "Auto Exposure Time Continuous: " << autoExpTime << "\n";
-		myFile << "Auto Gain Continuous: " << autoGain << "\n";*/
+		getline (myFile, line);
+		token = line.substr(line.find_last_of(":") + 1);
+		ss.str(std::string());
+		ss.clear();
+		ss << token;
+		ss >> exposureTime;
+		std::cout << "Exposure Time: " << exposureTime << std::endl;
+
+		getline (myFile, line);
+		token = line.substr(line.find_last_of(":") + 1);
+		ss.str(std::string());
+		ss.clear();
+		ss << token;
+		ss >> gain;
+		std::cout << "Gain: " << gain << std::endl;
+
+		getline (myFile, line);
+		token = line.substr(line.find_last_of(":") + 1);
+		ss.str(std::string());
+		ss.clear();
+		ss << token;
+		ss >> balanceR;
+		std::cout << "Balance Red: " << balanceR << std::endl;
+
+		getline (myFile, line);
+		token = line.substr(line.find_last_of(":") + 1);
+		ss.str(std::string());
+		ss.clear();
+		ss << token;
+		ss >> balanceG;
+		std::cout << "Balance Green: " << balanceG << std::endl;
+
+		getline (myFile, line);
+		token = line.substr(line.find_last_of(":") + 1);
+		ss.str(std::string());
+		ss.clear();
+		ss << token;
+		ss >> balanceB;
+		std::cout << "Balance Blue: " << balanceB << std::endl;
+
+		getline(myFile, line);
+		token = line.substr(line.find_last_of(":") + 1);
+		ss.str(std::string());
+		ss.clear();
+		ss << token;
+		ss >> autoExpTime;
+		std::cout << "Auto Exposure Time Continuous: " << autoExpTime << std::endl;
+
+		getline(myFile, line);
+		token = line.substr(line.find_last_of(":") + 1);
+		ss.str(std::string());
+		ss.clear();
+		ss << token;
+		ss >> autoGain;
+		std::cout << "Auto Gain Continuous: " << autoGain << std::endl;
+
 		myFile.close();
 	} else {
 		throw std::runtime_error("Could not open the file to load camera data");
 	}
-
-
-
-
 }
+
 
 void Images::saveData(std::string path) {
 // Saves the raw image and the camera data to file
@@ -267,9 +317,7 @@ void Images::saveData(std::string path) {
 	if (myFile.is_open()) {
 		myFile << "Raw picture file: " << path_raw << std::endl;
 		myFile << "Camera Index: " << cameraIdx << std::endl;
-		//time_t my_time = captureTime;
-		//myFile << "Capture Time: " << ctime(&captureTime);
-		myFile << "Capture Time: " << toString<time_t>(captureTime) << std::endl;
+		myFile << "Capture Time: " << convertTimeToString(captureTime) << std::endl;
 		myFile << "Exposure Time: " << exposureTime << std::endl;
 		myFile << "Gain: " << gain << std::endl;
 		myFile << "Balance Red  : " << balanceR << std::endl;
@@ -303,6 +351,62 @@ void Images::show (std::string name) {
 	/// Display
 	cv::namedWindow(name, CV_WINDOW_NORMAL);
 	cv::imshow(name, openCvImage);
+}
+
+std::string Images::convertTimeToString (time_t t) {
+
+	struct tm *theTime{};
+	theTime = localtime(&t);
+	std::stringstream ss{};
+
+	ss << std::setw(4) << std::setfill('0') << (1900 + theTime->tm_year) <<  "/";
+	ss << std::setw(2) << std::setfill('0') << theTime->tm_mon + 1 << "/";
+	ss << std::setw(2) << std::setfill('0') << theTime->tm_mday << " - ";
+	ss << std::setw(2) << std::setfill('0') << theTime->tm_hour << ":";
+	ss << std::setw(2) << std::setfill('0') << theTime->tm_min << ":";
+	ss << std::setw(2) << std::setfill('0') << theTime->tm_sec << " (DST: ";
+	ss << std::setw(2) << std::setfill('0') << theTime->tm_isdst << ")";
+
+	return ss.str();
+}
+
+time_t Images::convertStringToTime (std::string str) {
+	struct tm st{};
+	time_t t{};
+	std::stringstream ss{};
+
+	int num{};
+	char c{};
+	ss << str;
+
+	ss >> num;
+	st.tm_year = num - 1900;
+	ss >> c;
+	ss >> num;
+	st.tm_mon = num - 1;
+	ss >> c;
+	ss >> num;
+	st.tm_mday = num;
+	ss >> c;
+	ss >> num;
+	st.tm_hour = num;
+	ss >> c;
+	ss >> num;
+	st.tm_min = num;
+	ss >> c;
+	ss >> num;
+	st.tm_sec = num;
+	ss >> c;
+	ss >> c;
+	ss >> c;
+	ss >> c;
+	ss >> c;
+	ss >> num;
+	st.tm_isdst = num;
+
+	t = mktime(&st);
+
+	return t;
 }
 
 Images & Images::operator=(const Images &a) {

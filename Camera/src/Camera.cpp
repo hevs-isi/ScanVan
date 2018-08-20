@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <chrono>
 #include "Images.hpp"
+#include <thread>
 
 // Include files to use OpenCV API
 #include <opencv2/opencv.hpp>
@@ -37,6 +38,14 @@ int main() {
 	auto tnow = std::chrono::system_clock::now();
 	time_t captureTime = std::chrono::system_clock::to_time_t(tnow);
 	img1.setCaptureTime(captureTime);
+	img1.setExposureTime(1.2);
+	img1.setAutoExpTime(1);
+	img1.setAutoGain(1);
+	img1.setBalanceR(4.4);
+	img1.setBalanceG(3.3);
+	img1.setBalanceB(2.2);
+	img1.setAutoGain(5);
+	img1.setGain(5);
 
 	img1.saveData(img_path_out);
 	img1.show("Img1");
