@@ -90,8 +90,9 @@ std::string GetCurrentWorkingDir( void ) {
 	img3.loadData(img_path_out);
 
 	return 0;
-}*/
+} */
 
+/*
 int main(int argc, char* argv[])
 {
 
@@ -110,7 +111,6 @@ int main(int argc, char* argv[])
         {
             throw RUNTIME_EXCEPTION("No GigE transport layer available.");
         }
-
 
         // In this sample we use the transport layer directly to enumerate cameras.
         // By calling EnumerateDevices on the TL we get get only GigE cameras.
@@ -266,6 +266,28 @@ int main(int argc, char* argv[])
 
     return exitCode;
 }
+*/
 
 
+int main(int argc, char* argv[])
+{
+
+    int exitCode { 0 };
+
+    PylonAutoInitTerm autoinitTerm{};
+
+    Camera cam{};
+
+	try {
+		for (int i {0}; i < 10; ++i) {
+			cam.GrabImages();
+		}
+	} catch (const GenericException &e) {
+		// Error handling
+		cerr << "An exception occurred." << endl << e.GetDescription() << endl;
+		exitCode = 1;
+	}
+
+    return exitCode;
+}
 

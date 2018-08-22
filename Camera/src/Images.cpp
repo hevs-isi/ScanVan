@@ -3,40 +3,44 @@
 
 #include "Images.hpp"
 
-int Images::numImages { 0 };
-
 Images::Images(){
+// Constructor, reserves memory for the image
 	p_img = new std::vector<uint8_t> {};
 	p_img->reserve(height*width);
-	++numImages;
 }
 
 Images::Images(char * p){
+// Constructor where it receives a pointer to a buffer
+// It copies the image to the object's buffer
 	p_img = new std::vector<uint8_t> {};
 	copyBuffer (p);
-	++numImages;
 }
 
 Images::Images(size_t h, size_t w) : height{h}, width{w} {
+// Constructor that takes the height and the width as parameters
+// It reserves memory for the image
 	p_img = new std::vector<uint8_t> {};
 	p_img->reserve(height*width);
-	++numImages;
 }
 
 Images::Images(size_t h, size_t w, char * p) : height{h}, width{w} {
+// Constructor that takes the height and width and the pointer to the buffer
+// It copies the image to the object's buffer
 	p_img = new std::vector<uint8_t> {};
 	copyBuffer(p);
-	++numImages;
 }
 
 Images::Images(std::string path) {
+// Constructor that takes the path to the file where the raw image is stored
+// It loads the image to the object's buffer
 	p_img = new std::vector<uint8_t> {};
 	loadImage(path);
-	++numImages;
 }
 
 Images::Images(const Images &img) {
+// Copy constructor
 	p_img = new std::vector<uint8_t> {*(img.p_img)};
+	numImages = img.numImages;
 	cameraIdx = img.cameraIdx;
 	captureTime = img.captureTime;
 	exposureTime = img.exposureTime;
@@ -46,11 +50,10 @@ Images::Images(const Images &img) {
 	balanceB = img.balanceB;
 	autoExpTime = img.autoExpTime;
 	autoGain = img.autoGain;
-
-	++numImages;
 }
 
 Images::Images(Images &&img) {
+// Move constructor
 	p_img = img.p_img;
 	img.p_img = nullptr;
 
@@ -66,16 +69,18 @@ Images::Images(Images &&img) {
 }
 
 void Images::getBuffer(char *p) {
-// copies the image to the buffer passed by the pointer p
+// copies the image stored in the object's buffer to the buffer passed by the pointer p
 	memcpy(p, p_img->data(), width*height);
 }
 
 void Images::copyBuffer(char *p) {
-// copies the image passed by the pointer p into the buffer of the internal object
+// copies the image passed by the pointer p into the object's buffer
 	p_img->assign(p,p+(height*width));
 }
 
 void Images::loadImage(std::string path) {
+// Loads the images from the passed path.
+// The file needs to be a .raw file.
 	std::string ext = path.substr(path.find_last_of(".") + 1);
 	if (ext == "raw") {
 		std::ifstream myFile(path, std::ios::in | std::ios::binary);
@@ -99,6 +104,9 @@ void Images::loadImage(std::string path) {
 }
 
 void Images::saveImage(std::string path) {
+// It saves the object's image to file
+// If the path contains the extension .raw, it saves the raw data
+// If the path contains the extension .bmp, it saves in bmp format
 	std::string ext = path.substr(path.find_last_of(".") + 1);
 
 	// Save the raw image into file
@@ -129,7 +137,8 @@ void Images::saveImage(std::string path) {
 }
 
 void Images::loadData(std::string path) {
-
+// It loads the image from the .raw file and the camera parameters from the .txt file.
+// The provided path is the base name and the extension will be appended.
 
 	std::string path_raw = path + ".raw";
 	loadImage (path_raw);
@@ -256,7 +265,7 @@ void Images::saveData(std::string path) {
 }
 
 void Images::show() {
-
+// It shows the image in an opencv window with the title "Image"
 	cv::Mat openCvImageRG8 = cv::Mat(height, width, CV_8UC1, p_img->data());
 	cv::Mat openCvImage;
 	cv::cvtColor(openCvImageRG8, openCvImage, cv::COLOR_BayerRG2RGB);
@@ -278,7 +287,7 @@ void Images::show (std::string name) {
 }
 
 std::string Images::convertTimeToString (time_t t) {
-
+// It converts the time t into a string
 	struct tm *theTime{};
 	theTime = localtime(&t);
 	std::stringstream ss{};
@@ -295,6 +304,7 @@ std::string Images::convertTimeToString (time_t t) {
 }
 
 time_t Images::convertStringToTime (std::string str) {
+// It converts from a string into a time_t variable
 	struct tm st{};
 	time_t t{};
 	std::stringstream ss{};
@@ -337,6 +347,16 @@ Images & Images::operator=(const Images &a) {
 	if (this != &a) {
 		delete p_img;
 		p_img = new std::vector<uint8_t> {*(a.p_img)};
+		numImages = a.numImages;
+		cameraIdx = a.cameraIdx;
+		captureTime = a.captureTime;
+		exposureTime = a.exposureTime;
+		gain = a.gain;
+		balanceR = a.balanceR;
+		balanceG = a.balanceG;
+		balanceB = a.balanceB;
+		autoExpTime = a.autoExpTime;
+		autoGain = a.autoGain;
 	}
 	return *this;
 }
@@ -346,6 +366,16 @@ Images & Images::operator=(Images &&a) {
 		delete p_img;
 		p_img = a.p_img;
 		a.p_img = nullptr;
+		numImages = a.numImages;
+		cameraIdx = a.cameraIdx;
+		captureTime = a.captureTime;
+		exposureTime = a.exposureTime;
+		gain = a.gain;
+		balanceR = a.balanceR;
+		balanceG = a.balanceG;
+		balanceB = a.balanceB;
+		autoExpTime = a.autoExpTime;
+		autoGain = a.autoGain;
 	}
 	return *this;
 }

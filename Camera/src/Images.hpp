@@ -28,7 +28,7 @@ private:
 	double balanceB = 0;	// white balance B
 	int autoExpTime = 0;	// Auto Exposure Time
 	int autoGain = 0; 		// Auto Gain
-	static int numImages;
+	long int numImages = 0;
 public:
 	Images();
 	Images(char * p);
