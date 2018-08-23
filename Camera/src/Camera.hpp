@@ -51,9 +51,16 @@ private:
 	bool autoExpTimeCont = true;
 	bool autoGainCont = true;
 
+	std::string config_path = {"./config/"}; // default location of the configuration files of the cameras
+	bool loadParam = true; // when true, it will load the configuration files to the cameras
+
+	void Init();
 public:
 	Camera();
+	Camera(std::string path_to_config_files);
 	void GrabImages();
+	void SaveParameters();
+	void LoadParameters();
 	virtual ~Camera();
 };
 

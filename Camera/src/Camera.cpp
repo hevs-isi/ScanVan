@@ -7,52 +7,59 @@ using namespace Pylon;
 // Namespace for using cout.
 using namespace std;
 
-
 Camera::Camera() {
+	// It will not load the configuration file to the camera
+	std::cout << "Camera()" << std::endl;
+	loadParam = false;
+	Init();
+}
 
+Camera::Camera(std::string path_to_config_files): config_path { path_to_config_files } {
+	// It will load the configuration file to the cameras
+	// Files are located under the folder path_to_config_files
+	// The names of the files are the serial number of the camera .pfs
+	std::cout << "Camera(std::string)" << std::endl;
+	loadParam = true;
+	Init();
+}
+
+void Camera::Init() {
 
 	CTlFactory& tlFactory = CTlFactory::GetInstance();
 	pTL = dynamic_cast<IGigETransportLayer*>(tlFactory.CreateTl(BaslerGigEDeviceClass));
-	if (pTL == nullptr)
-    {
+	if (pTL == nullptr) {
 		throw RUNTIME_EXCEPTION("No GigE transport layer available.");
 	}
 
-    // In this sample we use the transport layer directly to enumerate cameras.
-    // By calling EnumerateDevices on the TL we get get only GigE cameras.
-    // You could also accomplish this by using a filter and
-    // let the Transport Layer Factory enumerate.
-    DeviceInfoList_t allDeviceInfos{};
-    if (pTL->EnumerateDevices(allDeviceInfos) == 0)
-    {
-        throw RUNTIME_EXCEPTION("No GigE cameras present.");
-    }
+	// In this sample we use the transport layer directly to enumerate cameras.
+	// By calling EnumerateDevices on the TL we get get only GigE cameras.
+	// You could also accomplish this by using a filter and
+	// let the Transport Layer Factory enumerate.
+	DeviceInfoList_t allDeviceInfos { };
+	if (pTL->EnumerateDevices(allDeviceInfos) == 0) {
+		throw RUNTIME_EXCEPTION("No GigE cameras present.");
+	}
 
-    // Only use cameras in the same subnet as the first one.
-    DeviceInfoList_t usableDeviceInfos{};
-    usableDeviceInfos.push_back(allDeviceInfos[0]);
-    subnet = static_cast<const CBaslerGigEDeviceInfo&>(allDeviceInfos[0]).GetSubnetAddress();
+	// Only use cameras in the same subnet as the first one.
+	DeviceInfoList_t usableDeviceInfos { };
+	usableDeviceInfos.push_back(allDeviceInfos[0]);
+	subnet = static_cast<const CBaslerGigEDeviceInfo&>(allDeviceInfos[0]).GetSubnetAddress();
 
-    // Start with index 1 as we have already added the first one above.
-    // We will also limit the number of cameras to c_maxCamerasToUse.
-    for (size_t i = 1; i < allDeviceInfos.size() && usableDeviceInfos.size() < c_maxCamerasToUse; ++i)
-    {
-        const CBaslerGigEDeviceInfo& gigeinfo = static_cast<const CBaslerGigEDeviceInfo&>(allDeviceInfos[i]);
-        if (subnet == gigeinfo.GetSubnetAddress())
-        {
-            // Add this deviceInfo to the ones we will be using.
-            usableDeviceInfos.push_back(gigeinfo);
-        }
-        else
-        {
-            cerr << "Camera will not be used because it is in a different subnet "
-                 << subnet << "!" << endl;
-        }
-    }
+	// Start with index 1 as we have already added the first one above.
+	// We will also limit the number of cameras to c_maxCamerasToUse.
+	for (size_t i = 1; i < allDeviceInfos.size() && usableDeviceInfos.size() < c_maxCamerasToUse; ++i) {
+		const CBaslerGigEDeviceInfo& gigeinfo = static_cast<const CBaslerGigEDeviceInfo&>(allDeviceInfos[i]);
+		if (subnet == gigeinfo.GetSubnetAddress()) {
+			// Add this deviceInfo to the ones we will be using.
+			usableDeviceInfos.push_back(gigeinfo);
+		} else {
+			cerr << "Camera will not be used because it is in a different subnet " << subnet << "!" << endl;
+		}
+	}
 
-    cameras.Initialize(usableDeviceInfos.size());
+	cameras.Initialize(usableDeviceInfos.size());
 
-    // Seed the random number generator and generate a random device key value.
+	// Seed the random number generator and generate a random device key value.
 	srand((unsigned) time(nullptr));
 	DeviceKey = rand();
 
@@ -66,7 +73,8 @@ Camera::Camera() {
 	for (size_t i = 0; i < cameras.GetSize(); ++i) {
 		cameras[i].Attach(tlFactory.CreateDevice(usableDeviceInfos[i]));
 		// We'll use the CActionTriggerConfiguration, which will set up the cameras to wait for an action command.
-		cameras[i].RegisterConfiguration(new CActionTriggerConfiguration{DeviceKey, GroupKey, AllGroupMask}, RegistrationMode_Append, Cleanup_Delete);
+		cameras[i].RegisterConfiguration(new CActionTriggerConfiguration { DeviceKey, GroupKey, AllGroupMask }, RegistrationMode_Append,
+				Cleanup_Delete);
 		// Set the context. This will help us later to correlate the grab result to a camera in the array.
 		cameras[i].SetCameraContext(i);
 
@@ -80,12 +88,23 @@ Camera::Camera() {
 	// This will apply the CActionTriggerConfiguration specified above.
 	cameras.Open();
 
+	// Reads the camera parameters from file
+	if (loadParam) {
+		try {
+			LoadParameters();
+		} catch (...) {
+			std::cerr << "Error loading the parameters of the camera." << std::endl;
+		}
+	}
+
 	for (size_t i = 0; i < cameras.GetSize(); ++i) {
 		// This sets the transfer pixel format to BayerRG8
 		cameras[i].PixelFormat.SetValue(PixelFormat_BayerRG8);
 
 		cameras[i].GevSCPSPacketSize.SetValue(9000);
 		cameras[i].GevSCPD.SetValue(50);
+		cameras[i].GevSCFTD.SetValue(50);
+		cameras[i].GevSCBWRA.SetValue(cameras[i].GevSCBWRA.GetMax());
 
 		cameras[i].GainAuto.SetValue(GainAuto_Off);
 		cameras[i].ExposureAuto.SetValue(ExposureAuto_Off);
@@ -120,8 +139,8 @@ Camera::Camera() {
 		if (autoGainCont)
 			cameras[i].GainAuto.SetValue(GainAuto_Continuous);
 	}
-
 }
+
 
 void Camera::GrabImages() {
 	//////////////////////////////////////////////////////////////////////
@@ -172,7 +191,7 @@ void Camera::GrabImages() {
 			cv::waitKey(1);
 
 
-			cout << "Gray value of first pixel: " << (uint32_t) pImageBuffer[0] << endl << endl;
+			cout << "Gray value of first pixel: " << static_cast<uint32_t> (pImageBuffer[0]) << endl << endl;
 		} else {
 			// If a buffer has been incompletely grabbed, the network bandwidth is possibly insufficient for transferring
 			// multiple images simultaneously. See note above c_maxCamerasToUse.
@@ -188,14 +207,50 @@ void Camera::GrabImages() {
 	cameras.StopGrabbing();
 }
 
+void Camera::SaveParameters(){
+
+	std::vector<String_t> sn{};
+
+	for (size_t i = 0; i < cameras.GetSize(); ++i) {
+		sn.push_back(cameras[i].GetDeviceInfo().GetSerialNumber());
+		std::stringstream ss{};
+		ss << sn[i].c_str();
+		ss << ".pfs";
+		std::string filename = config_path + "/" + ss.str();
+
+		//const char Filename[name.size()+1] { name.c_str() };
+		cout << "Saving camera's node map to file..." << endl;
+		// Save the content of the camera's node map into the file.
+		CFeaturePersistence::Save(filename.c_str(), &cameras[i].GetNodeMap());
+	}
+
+}
+
+void Camera::LoadParameters(){
+
+	std::vector<String_t> sn{};
+
+	for (size_t i = 0; i < cameras.GetSize(); ++i) {
+		sn.push_back(cameras[i].GetDeviceInfo().GetSerialNumber());
+		std::stringstream ss { };
+		ss << sn[i].c_str();
+		ss << ".pfs";
+		std::string filename = config_path + "/" + ss.str();
+
+	    std::cout << "Reading file back to camera's node map for camera with SN:"<< cameras[i].GetDeviceInfo().GetSerialNumber() << " ..." << std::endl;
+	    CFeaturePersistence::Load(filename.c_str(), &cameras[i].GetNodeMap(), true );
+	}
+}
+
 Camera::~Camera() {
 
-	/*for (size_t i = 0; i < cameras.GetSize(); ++i) {
+/*
+	for (size_t i = 0; i < cameras.GetSize(); ++i) {
 		cameras[i].DeviceReset();
 	}
 */
+
 	// Close all cameras.
 	cameras.Close();
-
 }
 
