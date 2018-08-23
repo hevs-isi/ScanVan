@@ -162,10 +162,16 @@ void Camera::GrabImages() {
 			// Print the index and the model name of the camera.
 			cout << "Camera " << cameraIndex << ": " << cameras[cameraIndex].GetDeviceInfo().GetModelName() << " ("
 					<< cameras[cameraIndex].GetDeviceInfo().GetIpAddress() << ")" << endl;
-
 			// You could process the image here by accessing the image buffer.
 			cout << "GrabSucceeded: " << ptrGrabResult->GrabSucceeded() << endl;
-			const uint8_t *pImageBuffer = (uint8_t *) ptrGrabResult->GetBuffer();
+			uint8_t *pImageBuffer = static_cast<uint8_t *> (ptrGrabResult->GetBuffer());
+
+			// Create an Image object with the grabbed data
+			Images img1 {height, width, reinterpret_cast<char *> (pImageBuffer)};
+			img1.show(to_string(cameraIndex));
+			cv::waitKey(1);
+
+
 			cout << "Gray value of first pixel: " << (uint32_t) pImageBuffer[0] << endl << endl;
 		} else {
 			// If a buffer has been incompletely grabbed, the network bandwidth is possibly insufficient for transferring
@@ -184,6 +190,10 @@ void Camera::GrabImages() {
 
 Camera::~Camera() {
 
+	/*for (size_t i = 0; i < cameras.GetSize(); ++i) {
+		cameras[i].DeviceReset();
+	}
+*/
 	// Close all cameras.
 	cameras.Close();
 
