@@ -13,6 +13,8 @@
 
 #include "Images.hpp"
 
+#include <algorithm>
+
 class Camera {
 private:
 	Pylon::IGigETransportLayer *pTL{};
@@ -51,13 +53,17 @@ private:
 	bool autoExpTimeCont = true;
 	bool autoGainCont = true;
 
+	std::vector<size_t> sortedCameraIdx {};
+
 	std::string config_path = {"./config/"}; // default location of the configuration files of the cameras
 	bool loadParam = true; // when true, it will load the configuration files to the cameras
 
 	void Init();
+
 public:
 	Camera();
 	Camera(std::string path_to_config_files);
+	size_t GetNumCam();
 	void GrabImages();
 	void SaveParameters();
 	void LoadParameters();

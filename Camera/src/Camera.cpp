@@ -9,7 +9,6 @@ using namespace std;
 
 Camera::Camera() {
 	// It will not load the configuration file to the camera
-	std::cout << "Camera()" << std::endl;
 	loadParam = false;
 	Init();
 }
@@ -18,7 +17,6 @@ Camera::Camera(std::string path_to_config_files): config_path { path_to_config_f
 	// It will load the configuration file to the cameras
 	// Files are located under the folder path_to_config_files
 	// The names of the files are the serial number of the camera .pfs
-	std::cout << "Camera(std::string)" << std::endl;
 	loadParam = true;
 	Init();
 }
@@ -69,6 +67,13 @@ void Camera::Init() {
 	// You can look at the implementation of CActionTriggerConfiguration in <pylon/gige/ActionTriggerConfiguration.h>
 	// to see which features are set.
 
+	// vector of serial number to sort and order the camera idx
+	struct SerialNumIdx {
+		String_t number;
+		size_t index;
+	};
+	std::vector<SerialNumIdx> sn{};
+
 	// Create all GigE cameras and attach them to the InstantCameras in the array.
 	for (size_t i = 0; i < cameras.GetSize(); ++i) {
 		cameras[i].Attach(tlFactory.CreateDevice(usableDeviceInfos[i]));
@@ -81,7 +86,21 @@ void Camera::Init() {
 		const CBaslerGigEDeviceInfo& di = cameras[i].GetDeviceInfo();
 
 		// Print the model name of the camera.
-		cout << "Using camera " << i << ": " << di.GetModelName() << " (" << di.GetIpAddress() << ")" << endl;
+		cout << "Using camera " << i << ": " << di.GetModelName() << " (" << di.GetIpAddress() << ")" << " - (SN:" << di.GetSerialNumber() << ")" << endl;
+
+		SerialNumIdx elem {di.GetSerialNumber(), i};
+		// push the serial numbers and the idx positions into vectors
+		sn.push_back(elem);
+	}
+
+	// Sort the serial numbers in increasing value
+	std::sort(sn.begin(), sn.end(), [](const auto &e1, const auto &e2) {
+		return e1.number < e2.number;
+	});
+
+	// Store the indices of the camera corresponding to the increasing value of serial numbers
+	for (const auto &x : sn) {
+		sortedCameraIdx.push_back(x.index);
 	}
 
 	// Open all cameras.
@@ -92,8 +111,10 @@ void Camera::Init() {
 	if (loadParam) {
 		try {
 			LoadParameters();
-		} catch (...) {
-			std::cerr << "Error loading the parameters of the camera." << std::endl;
+		} catch (const GenericException &e) {
+			// Error handling
+			cerr << "Error loading the parameters of the camera." << std::endl;
+			cerr <<  e.GetDescription() << endl;
 		}
 	}
 
@@ -101,7 +122,7 @@ void Camera::Init() {
 		// This sets the transfer pixel format to BayerRG8
 		cameras[i].PixelFormat.SetValue(PixelFormat_BayerRG8);
 
-		cameras[i].GevSCPSPacketSize.SetValue(9000);
+		cameras[i].GevSCPSPacketSize.SetValue(8192);
 		cameras[i].GevSCPD.SetValue(50);
 		cameras[i].GevSCFTD.SetValue(50);
 		cameras[i].GevSCBWRA.SetValue(cameras[i].GevSCBWRA.GetMax());
@@ -179,15 +200,15 @@ void Camera::GrabImages() {
 		// Image grabbed successfully?
 		if (ptrGrabResult->GrabSucceeded()) {
 			// Print the index and the model name of the camera.
-			cout << "Camera " << cameraIndex << ": " << cameras[cameraIndex].GetDeviceInfo().GetModelName() << " ("
-					<< cameras[cameraIndex].GetDeviceInfo().GetIpAddress() << ")" << endl;
+			cout << "Camera " << sortedCameraIdx[cameraIndex] << ": " << cameras[sortedCameraIdx[cameraIndex]].GetDeviceInfo().GetModelName() << " ("
+					<< cameras[sortedCameraIdx[cameraIndex]].GetDeviceInfo().GetIpAddress() << ")" << endl;
 			// You could process the image here by accessing the image buffer.
 			cout << "GrabSucceeded: " << ptrGrabResult->GrabSucceeded() << endl;
 			uint8_t *pImageBuffer = static_cast<uint8_t *> (ptrGrabResult->GetBuffer());
 
 			// Create an Image object with the grabbed data
 			Images img1 {height, width, reinterpret_cast<char *> (pImageBuffer)};
-			img1.show(to_string(cameraIndex));
+			img1.show(to_string(sortedCameraIdx[cameraIndex]));
 			cv::waitKey(1);
 
 
@@ -242,13 +263,17 @@ void Camera::LoadParameters(){
 	}
 }
 
+size_t Camera::GetNumCam() {
+	return cameras.GetSize();
+}
+
 Camera::~Camera() {
 
-/*
+
 	for (size_t i = 0; i < cameras.GetSize(); ++i) {
 		cameras[i].DeviceReset();
 	}
-*/
+
 
 	// Close all cameras.
 	cameras.Close();

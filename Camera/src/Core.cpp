@@ -90,6 +90,10 @@ int main(int argc, char* argv[])
 		Camera cam { config_path };
 		//Camera cam {};
 
+		if (cam.GetNumCam()!=2) {
+			throw std::runtime_error("Not all the cameras have been detected!");
+		}
+
 		for (int i {0}; i < 10; ++i) {
 			cam.GrabImages();
 		}
