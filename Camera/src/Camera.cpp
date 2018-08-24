@@ -200,8 +200,10 @@ void Camera::GrabImages() {
 		// Image grabbed successfully?
 		if (ptrGrabResult->GrabSucceeded()) {
 			// Print the index and the model name of the camera.
-			cout << "Camera " << sortedCameraIdx[cameraIndex] << ": " << cameras[sortedCameraIdx[cameraIndex]].GetDeviceInfo().GetModelName() << " ("
-					<< cameras[sortedCameraIdx[cameraIndex]].GetDeviceInfo().GetIpAddress() << ")" << endl;
+			cout << "Camera " << sortedCameraIdx[cameraIndex] << ": " << cameras[cameraIndex].GetDeviceInfo().GetModelName() << " ("
+					<< cameras[cameraIndex].GetDeviceInfo().GetIpAddress() << ") (SN:" <<
+					cameras[cameraIndex].GetDeviceInfo().GetSerialNumber() << ")"
+					<< endl;
 			// You could process the image here by accessing the image buffer.
 			cout << "GrabSucceeded: " << ptrGrabResult->GrabSucceeded() << endl;
 			uint8_t *pImageBuffer = static_cast<uint8_t *> (ptrGrabResult->GetBuffer());
