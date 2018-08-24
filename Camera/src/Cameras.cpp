@@ -1,4 +1,6 @@
-#include "Camera.hpp"
+#include "Cameras.hpp"
+
+// The code assumes there are two cameras connected
 
 // Settings to use Basler GigE cameras.
 using namespace Basler_GigECameraParams;
@@ -7,13 +9,15 @@ using namespace Pylon;
 // Namespace for using cout.
 using namespace std;
 
-Camera::Camera() {
+namespace ScanVan {
+
+Cameras::Cameras() {
 	// It will not load the configuration file to the camera
 	loadParam = false;
 	Init();
 }
 
-Camera::Camera(std::string path_to_config_files): config_path { path_to_config_files } {
+Cameras::Cameras(std::string path_to_config_files): config_path { path_to_config_files } {
 	// It will load the configuration file to the cameras
 	// Files are located under the folder path_to_config_files
 	// The names of the files are the serial number of the camera .pfs
@@ -21,7 +25,7 @@ Camera::Camera(std::string path_to_config_files): config_path { path_to_config_f
 	Init();
 }
 
-void Camera::Init() {
+void Cameras::Init() {
 
 	CTlFactory& tlFactory = CTlFactory::GetInstance();
 	pTL = dynamic_cast<IGigETransportLayer*>(tlFactory.CreateTl(BaslerGigEDeviceClass));
@@ -53,6 +57,11 @@ void Camera::Init() {
 		} else {
 			cerr << "Camera will not be used because it is in a different subnet " << subnet << "!" << endl;
 		}
+	}
+
+	// Check if all the cameras have been detected
+	if (usableDeviceInfos.size() != c_maxCamerasToUse) {
+		throw std::runtime_error("Not all the cameras have been detected!");
 	}
 
 	cameras.Initialize(usableDeviceInfos.size());
@@ -163,7 +172,7 @@ void Camera::Init() {
 }
 
 
-void Camera::GrabImages() {
+void Cameras::GrabImages() {
 	//////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////
 	// Use an Action Command to Trigger Multiple Cameras at the Same Time.
@@ -185,6 +194,11 @@ void Camera::GrabImages() {
 
 	// Retrieve images from all cameras.
 	const int DefaultTimeout_ms  { 5000 };
+
+	// Create an Image objects for the grabbed data
+	Images img0 {height, width};
+	Images img1 {height, width};
+
 
 	for (size_t i = 0; i < cameras.GetSize() && cameras.IsGrabbing(); ++i) {
 		// CInstantCameraArray::RetrieveResult will return grab results in the order they arrive.
@@ -208,10 +222,12 @@ void Camera::GrabImages() {
 			cout << "GrabSucceeded: " << ptrGrabResult->GrabSucceeded() << endl;
 			uint8_t *pImageBuffer = static_cast<uint8_t *> (ptrGrabResult->GetBuffer());
 
-			// Create an Image object with the grabbed data
-			Images img1 {height, width, reinterpret_cast<char *> (pImageBuffer)};
-			img1.show(to_string(sortedCameraIdx[cameraIndex]));
-			cv::waitKey(1);
+			// Copy image to the object's buffer
+			if (sortedCameraIdx[cameraIndex] == 0) {
+				img0.copyBuffer(reinterpret_cast<char *> (pImageBuffer));
+			} else {
+				img1.copyBuffer(reinterpret_cast<char *> (pImageBuffer));
+			}
 
 
 			cout << "Gray value of first pixel: " << static_cast<uint32_t> (pImageBuffer[0]) << endl << endl;
@@ -222,6 +238,16 @@ void Camera::GrabImages() {
 		}
 	}
 
+	//Images img {height, width, reinterpret_cast<char *> (pImageBuffer)};
+	//img0.show("0");
+	//img1.show("1");
+
+
+	PairImages imgs {std::move(img0), std::move(img1)};
+	imgs.showPair();
+	cv::waitKey(1);
+
+
 	// In case you want to trigger again you should wait for the camera
 	// to become trigger-ready before issuing the next action command.
 	// To avoid overtriggering you should call cameras[0].WaitForFrameTriggerReady
@@ -230,7 +256,7 @@ void Camera::GrabImages() {
 	cameras.StopGrabbing();
 }
 
-void Camera::SaveParameters(){
+void Cameras::SaveParameters(){
 
 	std::vector<String_t> sn{};
 
@@ -249,7 +275,7 @@ void Camera::SaveParameters(){
 
 }
 
-void Camera::LoadParameters(){
+void Cameras::LoadParameters(){
 
 	std::vector<String_t> sn{};
 
@@ -265,11 +291,11 @@ void Camera::LoadParameters(){
 	}
 }
 
-size_t Camera::GetNumCam() {
+size_t Cameras::GetNumCam() {
 	return cameras.GetSize();
 }
 
-Camera::~Camera() {
+Cameras::~Cameras() {
 
 
 	for (size_t i = 0; i < cameras.GetSize(); ++i) {
@@ -281,3 +307,4 @@ Camera::~Camera() {
 	cameras.Close();
 }
 
+} /* namespace ScanVan */

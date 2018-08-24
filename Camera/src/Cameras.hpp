@@ -1,5 +1,5 @@
-#ifndef CAMERA_HPP_
-#define CAMERA_HPP_
+#ifndef CAMERAS_HPP_
+#define CAMERAS_HPP_
 
 // Include files to use the PYLON API.
 #include <pylon/PylonIncludes.h>
@@ -12,10 +12,13 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #include "Images.hpp"
+#include "PairImages.hpp"
 
 #include <algorithm>
 
-class Camera {
+namespace ScanVan {
+
+class Cameras {
 private:
 	Pylon::IGigETransportLayer *pTL{};
 	// Limits the amount of cameras used for grabbing.
@@ -61,13 +64,15 @@ private:
 	void Init();
 
 public:
-	Camera();
-	Camera(std::string path_to_config_files);
+	Cameras();
+	Cameras(std::string path_to_config_files);
 	size_t GetNumCam();
 	void GrabImages();
 	void SaveParameters();
 	void LoadParameters();
-	virtual ~Camera();
+	virtual ~Cameras();
 };
 
-#endif /* CAMERA_HPP_ */
+} /* namespace ScanVan */
+
+#endif /* CAMERAS_HPP_ */

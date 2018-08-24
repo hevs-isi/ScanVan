@@ -3,6 +3,8 @@
 
 #include "Images.hpp"
 
+namespace ScanVan {
+
 Images::Images(){
 // Constructor, reserves memory for the image
 	p_img = new std::vector<uint8_t> {};
@@ -383,5 +385,7 @@ Images & Images::operator=(Images &&a) {
 Images::~Images() {
 	delete p_img;
 }
+
+} /* namespace ScanVan */
 
 #endif /* IMAGES_CPP_ */

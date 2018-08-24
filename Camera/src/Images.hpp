@@ -14,6 +14,8 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+namespace ScanVan {
+
 class Images {
 private:
 	std::vector<uint8_t> * p_img;
@@ -29,6 +31,8 @@ private:
 	int autoExpTime = 0;	// Auto Exposure Time
 	int autoGain = 0; 		// Auto Gain
 	long int numImages = 0;
+	std::string serialNumber{};
+
 public:
 	Images();
 	Images(char * p);
@@ -49,6 +53,7 @@ public:
 	void setBalanceB (double b) { balanceB = b; };
 	void setAutoExpTime (int b) { autoExpTime = b; };
 	void setAutoGain (int b) { autoGain = b; };
+	void setSerialNumber (std::string sn) { serialNumber = sn; };
 
 	size_t getHeight() { return height;};
 	size_t getWidth() { return width;};
@@ -59,6 +64,7 @@ public:
 	double getBalanceR () { return balanceR; };
 	double getBalanceG () { return balanceG; };
 	double getBalanceB () { return balanceB; };
+	std::string getSerialNumber() { return serialNumber; };
 	int getAutoExpTime() { return autoExpTime; };
 	int getAutoGain() { return autoGain; };
 
@@ -102,5 +108,6 @@ public:
 	}
 };
 
+} /* namespace ScanVan */
 
 #endif /* IMAGES_HPP_ */

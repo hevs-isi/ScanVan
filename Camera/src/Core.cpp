@@ -13,7 +13,6 @@
 #include <unistd.h>
 #include <chrono>
 #include "Images.hpp"
-#include "Camera.hpp"
 #include <thread>
 
 // Include files to use OpenCV API
@@ -25,6 +24,7 @@
 #include <pylon/PylonIncludes.h>
 #include <pylon/gige/PylonGigEIncludes.h>
 #include <pylon/gige/ActionTriggerConfiguration.h>
+#include "Cameras.hpp"
 
 // Settings to use Basler GigE cameras.
 using namespace Basler_GigECameraParams;
@@ -87,26 +87,24 @@ int main(int argc, char* argv[])
 
 	try {
 
-		Camera cam { config_path };
-		//Camera cam {};
+		ScanVan::Cameras cams { config_path };
+		//Camera cams {};
 
-		if (cam.GetNumCam()!=2) {
-			throw std::runtime_error("Not all the cameras have been detected!");
+		for (int i {0}; i < 100; ++i) {
+			cams.GrabImages();
 		}
 
-		for (int i {0}; i < 10; ++i) {
-			cam.GrabImages();
-		}
-
-		//cam.SaveParameters();
+		//cams.SaveParameters();
 
 	} catch (const GenericException &e) {
 		// Error handling
 		cerr << "An exception occurred." << endl << e.GetDescription() << endl;
 		exitCode = 1;
+	} catch (const std::exception &e) {
+		cerr << "An exception ocurred." << endl << e.what() << endl;
+		exitCode = 1;
+
 	}
-
-
 
     return exitCode;
 }
